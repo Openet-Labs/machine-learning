@@ -1,12 +1,12 @@
 package com.openet.labs.machineLearning.autoScale;
 
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URISyntaxException;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -16,17 +16,16 @@ import java.util.Properties;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.SQLContext;
 //Import factory methods provided by DataTypes.
 import org.apache.spark.sql.types.DataTypes;
-//Import StructType and StructField
-import org.apache.spark.sql.types.StructType;
 //import org.hibernate.engine.spi.RowSelection;
 import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.SQLContext;
-
+//Import StructType and StructField
+import org.apache.spark.sql.types.StructType;
 import org.junit.After;
 import org.junit.Before;
-
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(value = IntegrationTest.class)
@@ -178,7 +177,7 @@ public class QueryTaskExecutorTest implements Serializable {
         assertEquals(4, resultsRDD.first().size());       
         
         //check values        
-        LocalDate resultDate = (LocalDate)resultsRDD.first().get(0);        
+        LocalDate resultDate = ((Date)resultsRDD.first().get(0)).toLocalDate();        
         assertEquals("20/01/1980", resultDate.format(dateFormatter));
         
 

@@ -1,5 +1,6 @@
 package com.openet.labs.machineLearning.autoScale;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -8,7 +9,6 @@ import java.util.List;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.sql.DataFrame;
-
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.types.DataTypes;
@@ -137,7 +137,8 @@ public class DataConverter {
                 for (int i = 0; i < objectList.size(); i++) {
                     if (fields.get(i).dataType() == DataTypes.DateType) {
                         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(dateFormatPattern);
-                        data.add(dateFormatter.format((LocalDate) objectList.get(i)));
+                        Date date = (Date) objectList.get(i);
+                        data.add(dateFormatter.format(date.toLocalDate()));
                     } else {
                         data.add(objectList.get(i).toString());
                     }

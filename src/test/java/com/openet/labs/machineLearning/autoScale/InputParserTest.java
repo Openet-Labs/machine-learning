@@ -1,11 +1,9 @@
 package com.openet.labs.machineLearning.autoScale;
 
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.Serializable;
-import java.time.LocalDate;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,10 +15,9 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.types.DataTypes;
 //import org.hibernate.engine.spi.RowSelection;
 import org.apache.spark.sql.types.StructField;
-
 import org.junit.After;
 import org.junit.Before;
-
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(value = IntegrationTest.class)
@@ -67,19 +64,19 @@ public class InputParserTest implements Serializable {
 
         //Ensure types are correct
         Object obj = objectRDD.first().get(0);
-        assertTrue(obj.getClass().equals(String.class));
+        assertEquals(obj.getClass(),String.class);
         obj = objectRDD.first().get(1);
-        assertTrue(obj.getClass().equals(Integer.class));
+        assertEquals(obj.getClass(),Integer.class);
         obj = objectRDD.first().get(2);
-        assertTrue(obj.getClass().equals(Long.class));
+        assertEquals(obj.getClass(),Long.class);
         obj = objectRDD.first().get(3);
-        assertTrue(obj.getClass().equals(Float.class));
+        assertEquals(obj.getClass(),Float.class);
         obj = objectRDD.first().get(4);
-        assertTrue(obj.getClass().equals(Double.class));
+        assertEquals(obj.getClass(),Double.class);
         obj = objectRDD.first().get(5);
-        assertTrue(obj.getClass().equals(Boolean.class));
+        assertEquals(obj.getClass(), Boolean.class);
         obj = objectRDD.first().get(6);
-        assertTrue(obj.getClass().equals(LocalDate.class));
+        assertEquals(obj.getClass(),Date.class);
     }
 
 }
