@@ -5,6 +5,8 @@
  */
 package com.openet.labs.machineLearning.autoScale;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -68,10 +70,15 @@ public class AutoScalingMainTest {
     public void testInit() throws Exception {
         System.out.println("testInit");
         AutoScalingMain instance = new AutoScalingMain();
-        instance.init();
         instance.setJavaSparkContext(jsc);
-        JavaRDD<String> trainRDD = instance.getTrainingData();
-        System.out.println("trainRDD: " + trainRDD.count());
+        instance.init();
+
+//        JavaRDD<String> trainRDD = instance.getTrainingData();
+//        System.out.println("trainRDD: " + trainRDD.count());
+        instance.train();
+
+//        List<String> inputList = new ArrayList<>();
+//        inputList.add("");
     }
 
     /**

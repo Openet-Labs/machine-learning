@@ -5,6 +5,7 @@
  */
 package com.openet.labs.machineLearning.autoScale.utils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,9 @@ import scala.Tuple2;
  *
  * @author openet
  */
-public class EnigmaKafkaUtils {
+public class EnigmaKafkaUtils implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     public JavaRDD<String> kafkaGetRDD(JavaSparkContext jsc, String host, String kafkaTopicName, String kafkaCosumerGroup, String zookeeperQuorum, String broker, int perTopicKafkaPartitions) {
 

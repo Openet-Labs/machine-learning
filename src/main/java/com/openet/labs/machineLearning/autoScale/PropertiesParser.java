@@ -5,14 +5,17 @@
  */
 package com.openet.labs.machineLearning.autoScale;
 
+import java.io.Serializable;
 import java.util.Properties;
 
 /**
  *
  * @author openet
  */
-public class PropertiesParser {
-    
+public class PropertiesParser implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     public String getKafkaHost(Properties properties) {
         return properties.getProperty("kafka.host");
     }
