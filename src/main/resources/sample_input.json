@@ -8,7 +8,7 @@
             "vdus": [
                 {
                     "id": "squid_347",
-                    "vncs": [
+                    "vnfcs": [
                         {
                             "id": "vm250",
                             "cpu": 70,
