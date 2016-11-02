@@ -5,6 +5,7 @@
  */
 package com.openet.labs.machineLearning.autoScale;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -72,25 +73,50 @@ public class AutoScalingMainTest {
         AutoScalingMain instance = new AutoScalingMain();
         instance.setJavaSparkContext(jsc);
         instance.init();
+    }
 
-//        JavaRDD<String> trainRDD = instance.getTrainingData();
-//        System.out.println("trainRDD: " + trainRDD.count());
+    @Test
+    public void testTrain() throws Exception {
+        System.out.println("testTrain");
+        AutoScalingMain instance = new AutoScalingMain();
+        instance.setJavaSparkContext(jsc);
+        instance.init();
         instance.train();
+    }
 
-//        List<String> inputList = new ArrayList<>();
-//        inputList.add("");
+    @Test
+    public void testStreamingInput() throws Exception {
+        System.out.println("testStreamingInput");
+        AutoScalingMain instance = new AutoScalingMain();
+        instance.setJavaSparkContext(jsc);
+        instance.init();
+        instance.train();
+        instance.processInputStream();
+        instance.getJavaStreamingContext().start();
+        instance.getJavaStreamingContext().awaitTermination();
+        instance.close();
+        
+        
+        
     }
 
     /**
      * Test of setUseCaseProperties method, of class AutoScalingMain.
      */
-//    @Test
-//    public void testSetUseCaseProperties() {
-//        System.out.println("setUseCaseProperties");
-//        Properties properties = null;
-//        AutoScalingMain instance = new AutoScalingMain();
-//        instance.setUseCaseProperties(properties);
-//        // TODO review the generated test code and remove the default call to fail.
-//        fail("The test case is a prototype.");
-//    }
+    @Test
+    public void testParseJsonInput() throws IOException {
+        System.out.println("testParseJsonInput");
+        
+        List<String> inputData = new ArrayList<>();
+        String input1 = "{\"timestamp\":2354244234,\"vnfs\":[{\"id\":\"webcach_001\",\"flavor\":\"small\",\"flavors\":[\"small\",\"medium\",\"large\"],\"vdus\":[{\"id\":\"squid_347\",\"vnfcs\":[{\"id\":\"vm250\",\"cpu\":70,\"memory\":4560000,\"metric\":{\"current\":274758,\"threshold\":400000}},{\"id\":\"vm251\",\"cpu\":70,\"memory\":4560000,\"metric\":{\"current\":274758,\"threshold\":400000}},{\"id\":\"vm253\",\"cpu\":70,\"memory\":4560000,\"metric\":{\"current\":274758,\"threshold\":400000}}]},{\"id\":\"request_logger_437\",\"vnfcs\":[{\"id\":\"vm350\",\"cpu\":70,\"memory\":4560000,\"metric\":{\"current\":274758,\"threshold\":400000}}]}],\"_links\":{\"scale_up\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale_up\"},\"scale_down\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale_down\"},\"scale_to_flavor\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale/{flavor}\"}}}]}";
+        inputData.add(input1);
+        JavaRDD inputRDD = jsc.parallelize(inputData);
+        
+        AutoScalingMain instance = new AutoScalingMain();
+        instance.setJavaSparkContext(jsc);
+        instance.init();
+        instance.parseJsonInput(inputRDD);
+    }
+    
+    
 }

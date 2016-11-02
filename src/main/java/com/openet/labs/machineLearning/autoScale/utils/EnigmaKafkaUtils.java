@@ -15,10 +15,15 @@ import kafka.api.PartitionOffsetRequestInfo;
 import kafka.common.TopicAndPartition;
 import kafka.javaapi.OffsetResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
+import kafka.message.MessageAndMetadata;
 import kafka.serializer.StringDecoder;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaInputDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.apache.spark.streaming.kafka.OffsetRange;
 import scala.Tuple2;
@@ -33,7 +38,7 @@ public class EnigmaKafkaUtils implements Serializable {
 
     public JavaRDD<String> kafkaGetRDD(JavaSparkContext jsc, String host, String kafkaTopicName, String kafkaCosumerGroup, String zookeeperQuorum, String broker, int perTopicKafkaPartitions) {
 
-        // preparing the kafka streaming parameters
+        //kafka streaming parameters
         Map<String, String> kafkaParams = new HashMap<>();
         kafkaParams.put("zookeeper.connect", zookeeperQuorum);
         kafkaParams.put("group.id", kafkaCosumerGroup);
@@ -76,6 +81,35 @@ public class EnigmaKafkaUtils implements Serializable {
         long resultOffset = offsets[0];
 
         return resultOffset;
+    }
+
+    public JavaDStream<String> getKafkaDirectInputStreamOffset(JavaStreamingContext jsc, String host, String kafkaTopic, String kafkaCosumerGroup, String zookeeperQuorum, String broker, boolean isEarliestOffset) {
+
+        //kafka streaming parameters
+        Map<String, String> kafkaParams = new HashMap<>();
+        kafkaParams.put("zookeeper.connect", zookeeperQuorum);
+        kafkaParams.put("group.id", kafkaCosumerGroup);
+        kafkaParams.put("auto.commit.enable", "false");
+        kafkaParams.put("auto.offset.reset", "smallest");
+        kafkaParams.put("metadata.broker.list", broker);
+
+        Long startOffset = getKafkaOffsets(false, host, kafkaTopic, kafkaCosumerGroup);
+        if (isEarliestOffset) {
+            startOffset = getKafkaOffsets(true, host, kafkaTopic, kafkaCosumerGroup);
+        }
+
+        TopicAndPartition topicAndPartition = new TopicAndPartition(kafkaTopic, 0);
+        Map<TopicAndPartition, Long> offsets = new HashMap<>();
+        offsets.put(topicAndPartition, startOffset);
+
+        JavaInputDStream<String> message = KafkaUtils.createDirectStream(jsc, String.class, String.class, StringDecoder.class, StringDecoder.class, String.class, kafkaParams, offsets, new Function<MessageAndMetadata<String, String>, String>() {
+            public String call(MessageAndMetadata<String, String> v1) throws Exception {
+                return v1.message();
+            }
+        }
+        );
+
+        return message;
     }
 
 }

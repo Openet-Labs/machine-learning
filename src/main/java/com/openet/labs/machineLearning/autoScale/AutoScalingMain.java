@@ -1,6 +1,8 @@
 package com.openet.labs.machineLearning.autoScale;
 
 import com.openet.labs.machineLearning.autoScale.utils.EnigmaKafkaUtils;
+import com.openet.labs.machineLearning.autoScale.utils.UdfTimestampToDayOfWeek;
+import com.openet.labs.machineLearning.autoScale.utils.UdfTimestampToMinOfHour;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -20,6 +22,7 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.ml.Pipeline;
 import org.apache.spark.ml.PipelineModel;
 import org.apache.spark.ml.PipelineStage;
@@ -31,6 +34,10 @@ import org.apache.spark.sql.api.java.UDF1;
 import static org.apache.spark.sql.functions.callUDF;
 import static org.apache.spark.sql.functions.explode;
 import org.apache.spark.sql.types.DataTypes;
+import static org.apache.spark.sql.functions.callUDF;
+import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 public class AutoScalingMain implements Serializable {
 
@@ -55,6 +62,15 @@ public class AutoScalingMain implements Serializable {
 
     //Spark
     private transient JavaSparkContext jsc;
+    private transient JavaStreamingContext javaStreamingContext;
+
+    public JavaStreamingContext getJavaStreamingContext() {
+        return javaStreamingContext;
+    }
+
+    public void setJavaStreamingContext(JavaStreamingContext javaStreamingContext) {
+        this.javaStreamingContext = javaStreamingContext;
+    }
     private transient SQLContext sqlContext;
     private Map<String, PipelineModel> pipelineModelMap;
 
@@ -80,6 +96,7 @@ public class AutoScalingMain implements Serializable {
 
     public void init() throws IOException {
 
+        LOGGER.info("Start init");
         enableFileLog();
         setParser(new PropertiesParser());
         setEnigmaKafkaUtils(new EnigmaKafkaUtils());
@@ -88,10 +105,12 @@ public class AutoScalingMain implements Serializable {
         if (null != getJavaSparkContext()) {
 
             setSqlContext(new SQLContext(getJavaSparkContext()));
-            registerUDF(getSqlContext());
+            registerUdfs(getSqlContext());
+            setJavaStreamingContext(new JavaStreamingContext(jsc, Durations.milliseconds(2000)));
         }
         setPipelineModelMap(new HashMap<>());
 
+        LOGGER.info("Complete init");
     }
 
     public void train() {
@@ -114,15 +133,15 @@ public class AutoScalingMain implements Serializable {
         LOGGER.debug("Input Train DataFrame: " + inputTrainDF.first());
         LOGGER.info("inputTrainDF records: " + inputTrainDF.count());
 
-        DataFrame inputTrainFeaturesDF = inputTrainDF.withColumn("dayofweek", callUDF("ts2Day", inputTrainDF.col("Timestamp"))).withColumn("hrminofday",
-                callUDF("ts2HrMin", inputTrainDF.col("Timestamp")));
-
         List<String> listVdus = inputTrainDF.select("Vdu").javaRDD().map(x -> x.get(0).toString()).distinct().collect();
         LOGGER.info("listVdus: " + listVdus);
 
+        DataFrame inputTrainFeaturesDF = inputTrainDF.withColumn("dayofweek", callUDF("ts2Day", inputTrainDF.col("Timestamp"))).withColumn("hrminofday",
+                callUDF("ts2HrMin", inputTrainDF.col("Timestamp")));
+
         VectorAssembler assembler = new VectorAssembler().setInputCols(new String[]{"dayofweek", "hrminofday"}).setOutputCol("features");
         DataFrame inputTrainVectorDF = assembler.transform(inputTrainFeaturesDF);
-//
+
         LOGGER.debug("inputTrainFeaturesDF: " + inputTrainFeaturesDF.first());
         LOGGER.info("inputTrainFeaturesDF records: " + inputTrainFeaturesDF.count());
 
@@ -148,9 +167,105 @@ public class AutoScalingMain implements Serializable {
             // Store the model into a map
             getPipelineModelMap().put(vdu, model);
         }
+
         LOGGER.info("train():: Current model in pipelineModelMap:: " + getPipelineModelMap().keySet().toString());
         LOGGER.info("Complete Training");
 
+    }
+
+    public void processInputStream() {
+
+        LOGGER.info("Starting processInputStream");
+        JavaDStream<String> inputDataStream = getEnigmaKafkaUtils().getKafkaDirectInputStreamOffset(getJavaStreamingContext(), getKafkaHost(), getKafkaTopic(), getKafkaCosumerGroup(), getZookeeperQuorum(), getKafkaBroker(), false);
+
+        inputDataStream.foreachRDD(new VoidFunction<JavaRDD<String>>() {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void call(JavaRDD<String> inputRDD) throws Exception {
+
+                if (inputRDD.count() > 0) {
+
+                    LOGGER.info("inputRDD: " + inputRDD.first());
+
+                    JavaRDD<String> validatedInputRDD = inputRDD.filter(x -> validateInput(x));
+
+//                    if (validatedInputRDD.count() > 0) {
+//
+//                        VnfMigrateEntry vme = processMain(validatedInputRDD);
+//                        if (vme.isIsMoveVnf() && !isIsMovingVnf()) {
+//                            LOGGER.info("Starting to move VNF");
+//                            moveVnf(vme);
+//                        }
+//
+//                    } else {
+//                        LOGGER.info("Invalid Input!");
+//                    }
+                }
+
+            }
+
+        });
+
+    }
+
+    public void parseJsonInput(JavaRDD<String> inputRDD) {
+
+        LOGGER.info("Start parseJsonInput");
+
+        DataFrame inputDF = getSqlContext().read().json(inputRDD).cache();
+//        LOGGER.info("inputDF: " + inputDF.first());
+
+        DataFrame inputVnfDF = inputDF.select(explode(inputDF.col("vnfs")).alias("vnfs"), inputDF.col("timestamp"));
+//        LOGGER.info("inputVnfDF: " + inputVnfDF.first());
+
+        DataFrame inputVdusDF = inputVnfDF.select(explode(inputVnfDF.col("vnfs.vdus")).alias("vdus"), inputVnfDF.col("vnfs.id").alias("vnfid"), inputVnfDF.col("vnfs.flavor").alias("flavor"), inputVnfDF.col("vnfs.flavors").alias("flavors"), inputVnfDF.col("vnfs._links.scale_up.href").alias("scale_up"), inputVnfDF.col("vnfs._links.scale_down.href").alias("scale_down"), inputVnfDF.col("vnfs._links.scale_to_flavor.href").alias("scale_to_flavor"), inputVnfDF.col("timestamp"));
+//        LOGGER.info("inputVdusDF: " + inputVdusDF.first());
+//        inputVdusDF.show(false);
+
+        DataFrame inputVnfcDF = inputVdusDF.select(explode(inputVdusDF.col("vdus.vnfcs")).alias("vnfcs"), inputVdusDF.col("vdus.id").alias("vduid"), inputVdusDF.col("*"));
+
+        DataFrame inputFinalDF = inputVnfcDF.select(inputVnfcDF.col("*"), inputVnfcDF.col("vnfcs.id").alias("vnfcid"), inputVnfcDF.col("vnfcs.cpu").alias("cpu"), inputVnfcDF.col("vnfcs.memory").alias("memory"), inputVnfcDF.col("vnfcs.metric.current").alias("metric_current"), inputVnfcDF.col("vnfcs.metric.threshold").alias("metric_threshold"))
+                .drop(inputVnfcDF.col("vdus"))
+                .drop(inputVnfcDF.col("vnfcs"));
+
+//        LOGGER.info("inputFinalDF: " + inputFinalDF.first());
+        inputFinalDF.show(false);
+
+//        List<String> listParsed = inputFinalDF.javaRDD().map(x -> x.mkString()).collect();
+        List<String> listParsed = inputFinalDF.toJSON().toJavaRDD().collect();
+
+        System.out.println("listParsed: " + listParsed.get(0));
+        LOGGER.info("listParsed: " + listParsed.get(0));
+    }
+
+    public boolean validateInput(String in) {
+
+//        if (!in.contains("SFC")) {
+//            return false;
+//        }
+//        if (!in.contains("Node_Topology")) {
+//            return false;
+//        }
+//        if (!in.contains("Link_Latency")) {
+//            return false;
+//        }
+//        if (!in.contains("Timestamp")) {
+//            return false;
+//        }
+//        if (in.equals(null) || in.equals("")) {
+//            return false;
+//        }
+        return true;
+    }
+
+    private void voting() {
+
+        // reactive scale up, predictive scale up = take bigger number
+        // reactive scale up, predictive scale down = take reactive
+        // reactive scale down, predictive scale up = take predictive, unless predictive is wrong
+        // reactive scale down, predictive scale down = take reactive
     }
 
     public JavaRDD<String> getTrainingData() {
@@ -158,37 +273,14 @@ public class AutoScalingMain implements Serializable {
         return getEnigmaKafkaUtils().kafkaGetRDD(getJavaSparkContext(), getKafkaHost(), getKafkaTrainTopic(), getKafkaCosumerGroup(), getZookeeperQuorum(), getKafkaBroker(), getPerTopicKafkaPartitions());
     }
 
-    public void registerUDF(SQLContext sqlContext) {
+    public void registerUdfs(SQLContext sqlContext) {
 
-        sqlContext.udf().register("ts2Day", new UDF1<String, Double>() {
-            private static final long serialVersionUID = 1L;
+        UdfTimestampToDayOfWeek ts2Day = new UdfTimestampToDayOfWeek();
+        sqlContext.udf().register("ts2Day", (UDF1<?, ?>) ts2Day, DataTypes.DoubleType);
 
-            @Override
-            public Double call(String ts) throws Exception {
-                Date date = new Date();
-                date.setTime((long) Long.parseLong(ts));
+        UdfTimestampToMinOfHour ts2HrMin = new UdfTimestampToMinOfHour();
+        sqlContext.udf().register("ts2HrMin", (UDF1<?, ?>) ts2HrMin, DataTypes.DoubleType);
 
-                java.util.Calendar cal = Calendar.getInstance();
-                cal.setTime(date);
-
-                return (double) cal.get(java.util.Calendar.DAY_OF_WEEK);
-            }
-        }, DataTypes.DoubleType);
-
-        sqlContext.udf().register("ts2HrMin", new UDF1<String, Double>() {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public Double call(String ts) throws Exception {
-                Date date = new Date();
-                date.setTime((long) Long.parseLong(ts));
-
-                java.util.Calendar cal = Calendar.getInstance();
-                cal.setTime(date);
-                cal.setTimeZone(TimeZone.getTimeZone("GMT"));
-                return (double) ((cal.get(java.util.Calendar.HOUR_OF_DAY) * 60) + cal.get(java.util.Calendar.MINUTE));
-            }
-        }, DataTypes.DoubleType);
     }
 
     public void setPropertyValues() throws IOException {
@@ -213,6 +305,14 @@ public class AutoScalingMain implements Serializable {
         rfa.setAppend(false);
         rfa.activateOptions();
         LOGGER.addAppender(rfa);
+    }
+
+    public synchronized void close() throws IOException {
+        if (null != getJavaStreamingContext()) {
+            getJavaStreamingContext().stop();
+            setJavaStreamingContext(null);
+        }
+
     }
 
     //<editor-fold defaultstate="collapsed" desc="Getters and Setters">
