@@ -27,6 +27,7 @@ import org.apache.spark.ml.Pipeline;
 import org.apache.spark.ml.PipelineModel;
 import org.apache.spark.ml.PipelineStage;
 import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.ml.regression.DecisionTreeRegressor;
 import org.apache.spark.ml.regression.RandomForestRegressor;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
@@ -38,6 +39,15 @@ import static org.apache.spark.sql.functions.callUDF;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import static org.apache.spark.sql.functions.callUDF;
+import static org.apache.spark.sql.functions.callUDF;
+import static org.apache.spark.sql.functions.callUDF;
+import static org.apache.spark.sql.functions.callUDF;
+import static org.apache.spark.sql.functions.callUDF;
+import static org.apache.spark.sql.functions.callUDF;
+import static org.apache.spark.sql.functions.callUDF;
+import static org.apache.spark.sql.functions.callUDF;
+import scala.collection.mutable.WrappedArray;
 
 public class AutoScalingMain implements Serializable {
 
@@ -63,31 +73,16 @@ public class AutoScalingMain implements Serializable {
     //Spark
     private transient JavaSparkContext jsc;
     private transient JavaStreamingContext javaStreamingContext;
-
-    public JavaStreamingContext getJavaStreamingContext() {
-        return javaStreamingContext;
-    }
-
-    public void setJavaStreamingContext(JavaStreamingContext javaStreamingContext) {
-        this.javaStreamingContext = javaStreamingContext;
-    }
     private transient SQLContext sqlContext;
     private Map<String, PipelineModel> pipelineModelMap;
+    private Map<String, ItemVdu> vduItemsMap;
 
-    public Map<String, PipelineModel> getPipelineModelMap() {
-        return pipelineModelMap;
+    public Map<String, ItemVdu> getVduItemsMap() {
+        return vduItemsMap;
     }
 
-    public void setPipelineModelMap(Map<String, PipelineModel> pipelineModelMap) {
-        this.pipelineModelMap = pipelineModelMap;
-    }
-
-    public SQLContext getSqlContext() {
-        return sqlContext;
-    }
-
-    public void setSqlContext(SQLContext sqlContext) {
-        this.sqlContext = sqlContext;
+    public void setVduItemsMap(Map<String, ItemVdu> vduItemsMap) {
+        this.vduItemsMap = vduItemsMap;
     }
 
     public static void main(String[] args) {
@@ -109,6 +104,7 @@ public class AutoScalingMain implements Serializable {
             setJavaStreamingContext(new JavaStreamingContext(jsc, Durations.milliseconds(2000)));
         }
         setPipelineModelMap(new HashMap<>());
+        setVduItemsMap(new HashMap<>());
 
         LOGGER.info("Complete init");
     }
@@ -142,34 +138,51 @@ public class AutoScalingMain implements Serializable {
         VectorAssembler assembler = new VectorAssembler().setInputCols(new String[]{"dayofweek", "hrminofday"}).setOutputCol("features");
         DataFrame inputTrainVectorDF = assembler.transform(inputTrainFeaturesDF);
 
-        LOGGER.debug("inputTrainFeaturesDF: " + inputTrainFeaturesDF.first());
-        LOGGER.info("inputTrainFeaturesDF records: " + inputTrainFeaturesDF.count());
-
         LOGGER.debug("inputTrainVectorDF: " + inputTrainVectorDF.first());
         LOGGER.info("inputTrainVectorDF records: " + inputTrainVectorDF.count());
 
-        for (String vdu : listVdus) {
+        for (String vduId : listVdus) {
 
-            DataFrame perVduTrainDataDF = inputTrainVectorDF.filter(inputTrainDF.col("Vdu").equalTo(vdu)).select(inputTrainVectorDF.col("Metric").alias("label"), inputTrainVectorDF.col("features"));
-            LOGGER.debug("perVduTrainDataDF: " + perVduTrainDataDF.first());
-            LOGGER.info("perVduTrainDataDF records: " + perVduTrainDataDF.count());
-            // Create labeledPoint dataframe
+            DataFrame perVduTrainDataDF = inputTrainVectorDF.filter(inputTrainDF.col("Vdu").equalTo(vduId));
+            DataFrame perVduVnfcsTrainDataDF = perVduTrainDataDF.select(perVduTrainDataDF.col("Vnfcs").cast("double").alias("label"), perVduTrainDataDF.col("features"));
+            DataFrame perVduCpuTrainDataDF = perVduTrainDataDF.select(perVduTrainDataDF.col("Memory").alias("label"), perVduTrainDataDF.col("features"));
+            DataFrame perVduMemoryTrainDataDF = perVduTrainDataDF.select(perVduTrainDataDF.col("Cpu").alias("label"), perVduTrainDataDF.col("features"));
 
-            // Train a RandomForest model
-            RandomForestRegressor randomForest = new RandomForestRegressor().setLabelCol("label").setFeaturesCol("features");
-
-            // Chain indexer and forest in a Pipeline
-            Pipeline pipeline = new Pipeline().setStages(new PipelineStage[]{randomForest});
-
-            // Train model.  This also runs the indexer.
-            PipelineModel model = pipeline.fit(perVduTrainDataDF);
+            // Train model
+            PipelineModel modelVnfc = trainModel(perVduVnfcsTrainDataDF, "predictedVnfc");
+            PipelineModel modelCpu = trainModel(perVduCpuTrainDataDF, "predictedCpu");
+            PipelineModel modelMemory = trainModel(perVduMemoryTrainDataDF, "predictedMemory");
 
             // Store the model into a map
-            getPipelineModelMap().put(vdu, model);
+            ItemVdu vdu = new ItemVdu(vduId);
+            vdu.setModelVnfc(modelVnfc);
+            vdu.setModelCpu(modelCpu);
+            vdu.setModelMemory(modelMemory);
+            getVduItemsMap().put(vduId, vdu);
         }
 
-        LOGGER.info("train():: Current model in pipelineModelMap:: " + getPipelineModelMap().keySet().toString());
+        LOGGER.info("train():: Current model in pipelineModelMap:: " + getVduItemsMap().keySet().toString());
         LOGGER.info("Complete Training");
+
+    }
+
+    public PipelineModel trainModel(DataFrame perVduTrainDataDF, String predictOutCol) {
+
+        // Train a Decision Tree model
+        DecisionTreeRegressor decisiontree = new DecisionTreeRegressor()
+                .setLabelCol("label")
+                .setFeaturesCol("features")
+                .setMaxBins(10000)
+                .setMaxDepth(10)
+                .setPredictionCol(predictOutCol);
+
+        // Chain indexer and forest in a Pipeline
+        Pipeline pipeline = new Pipeline().setStages(new PipelineStage[]{decisiontree});
+
+        // Train model.  This also runs the indexer.
+        PipelineModel model = pipeline.fit(perVduTrainDataDF);
+
+        return model;
 
     }
 
@@ -210,34 +223,72 @@ public class AutoScalingMain implements Serializable {
 
     }
 
-    public void parseJsonInput(JavaRDD<String> inputRDD) {
+    public List<String> parseJsonInput(JavaRDD<String> inputRDD) {
 
         LOGGER.info("Start parseJsonInput");
 
         DataFrame inputDF = getSqlContext().read().json(inputRDD).cache();
-//        LOGGER.info("inputDF: " + inputDF.first());
 
         DataFrame inputVnfDF = inputDF.select(explode(inputDF.col("vnfs")).alias("vnfs"), inputDF.col("timestamp"));
-//        LOGGER.info("inputVnfDF: " + inputVnfDF.first());
 
         DataFrame inputVdusDF = inputVnfDF.select(explode(inputVnfDF.col("vnfs.vdus")).alias("vdus"), inputVnfDF.col("vnfs.id").alias("vnfid"), inputVnfDF.col("vnfs.flavor").alias("flavor"), inputVnfDF.col("vnfs.flavors").alias("flavors"), inputVnfDF.col("vnfs._links.scale_up.href").alias("scale_up"), inputVnfDF.col("vnfs._links.scale_down.href").alias("scale_down"), inputVnfDF.col("vnfs._links.scale_to_flavor.href").alias("scale_to_flavor"), inputVnfDF.col("timestamp"));
-//        LOGGER.info("inputVdusDF: " + inputVdusDF.first());
-//        inputVdusDF.show(false);
 
         DataFrame inputVnfcDF = inputVdusDF.select(explode(inputVdusDF.col("vdus.vnfcs")).alias("vnfcs"), inputVdusDF.col("vdus.id").alias("vduid"), inputVdusDF.col("*"));
 
-        DataFrame inputFinalDF = inputVnfcDF.select(inputVnfcDF.col("*"), inputVnfcDF.col("vnfcs.id").alias("vnfcid"), inputVnfcDF.col("vnfcs.cpu").alias("cpu"), inputVnfcDF.col("vnfcs.memory").alias("memory"), inputVnfcDF.col("vnfcs.metric.current").alias("metric_current"), inputVnfcDF.col("vnfcs.metric.threshold").alias("metric_threshold"))
+        DataFrame inputFinalDF = inputVnfcDF.select(inputVnfcDF.col("*"), inputVnfcDF.col("vnfcs.id").alias("vnfcid"), inputVnfcDF.col("vnfcs.cpu").alias("cpu"), inputVnfcDF.col("vnfcs.memory").alias("memory"))
                 .drop(inputVnfcDF.col("vdus"))
                 .drop(inputVnfcDF.col("vnfcs"));
 
-//        LOGGER.info("inputFinalDF: " + inputFinalDF.first());
-        inputFinalDF.show(false);
+        DataFrame inputVnfcWithCountDF = inputFinalDF.groupBy("vduid").count()
+                .withColumnRenamed("count", "vnfcCount")
+                .join(inputFinalDF, "vduid");
 
-//        List<String> listParsed = inputFinalDF.javaRDD().map(x -> x.mkString()).collect();
-        List<String> listParsed = inputFinalDF.toJSON().toJavaRDD().collect();
+        inputVnfcWithCountDF.show(false);
 
-        System.out.println("listParsed: " + listParsed.get(0));
-        LOGGER.info("listParsed: " + listParsed.get(0));
+        DataFrame inputPredictDF = inputVnfcWithCountDF.withColumn("dayofweek", callUDF("ts2Day", inputVnfcWithCountDF.col("timestamp").cast("String")))
+                .withColumn("hrminofday", callUDF("ts2HrMin", inputVnfcWithCountDF.col("timestamp").cast("String")))
+                ;
+
+        VectorAssembler assembler = new VectorAssembler().setInputCols(new String[]{"dayofweek", "hrminofday"}).setOutputCol("features");
+        DataFrame inputPredictVectorDF = assembler.transform(inputPredictDF);
+
+//        inputPredictVectorDF.show();
+        List<String> listVdus = inputPredictVectorDF.select("vduid").javaRDD().map(x -> x.get(0).toString()).distinct().collect();
+        LOGGER.info("listVdus: " + listVdus);
+
+        DataFrame finalPredictedDF = getSqlContext().emptyDataFrame();
+        for (String vduid : listVdus) {
+
+            ItemVdu vduItem = getVduItemsMap().get(vduid);
+
+            DataFrame inputPerVduPredictVectorDF = inputPredictVectorDF.filter(inputPredictVectorDF.col("vduid").equalTo(vduid));
+            DataFrame inputPerVduPredictVnfcDF = vduItem.getModelVnfc().transform(inputPerVduPredictVectorDF);
+            DataFrame inputPerVduPredictCpuDF = vduItem.getModelCpu().transform(inputPerVduPredictVnfcDF);
+            DataFrame inputPerVduPredictMemoryDF = vduItem.getModelMemory().transform(inputPerVduPredictCpuDF);
+
+            if (finalPredictedDF.equals(getSqlContext().emptyDataFrame())) {
+                finalPredictedDF = inputPerVduPredictMemoryDF;
+            } else {
+                finalPredictedDF = finalPredictedDF.unionAll(inputPerVduPredictMemoryDF);
+            }
+
+        }
+
+        List<String> listParsed = finalPredictedDF
+                .drop(finalPredictedDF.col("features"))
+                .drop(finalPredictedDF.col("dayofweek"))
+                .drop(finalPredictedDF.col("hrminofday"))
+                .drop(finalPredictedDF.col("timestamp"))
+                .toJSON().toJavaRDD().collect();
+
+        inputDF.unpersist();
+
+        LOGGER.info("Complete parseJsonInput");
+
+        return listParsed;
+
+        //        LOGGER.info("listParsed: " + listParsed.toString());        
+//        LOGGER.info("listParsed: " + listParsed.toString());
     }
 
     public boolean validateInput(String in) {
@@ -316,6 +367,30 @@ public class AutoScalingMain implements Serializable {
     }
 
     //<editor-fold defaultstate="collapsed" desc="Getters and Setters">
+    public JavaStreamingContext getJavaStreamingContext() {
+        return javaStreamingContext;
+    }
+
+    public void setJavaStreamingContext(JavaStreamingContext javaStreamingContext) {
+        this.javaStreamingContext = javaStreamingContext;
+    }
+
+    public Map<String, PipelineModel> getPipelineModelMap() {
+        return pipelineModelMap;
+    }
+
+    public void setPipelineModelMap(Map<String, PipelineModel> pipelineModelMap) {
+        this.pipelineModelMap = pipelineModelMap;
+    }
+
+    public SQLContext getSqlContext() {
+        return sqlContext;
+    }
+
+    public void setSqlContext(SQLContext sqlContext) {
+        this.sqlContext = sqlContext;
+    }
+
     public JavaSparkContext getJavaSparkContext() {
         return jsc;
     }
