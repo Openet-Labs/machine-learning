@@ -36,7 +36,7 @@ public class SimpleVnfAsyncScaler extends Scaler {
 
     private ScaleType calculateScaleType(Vnf vnf) {
         // TODO: the conditions for scaling will come here
-        return new ScaleType(ScaleType.Type.UP);
+        return new ScaleType(ScaleType.Type.FLAVOR, "big");
     }
 
     private String getScaleLink(Vnf vnf, ScaleType type) {

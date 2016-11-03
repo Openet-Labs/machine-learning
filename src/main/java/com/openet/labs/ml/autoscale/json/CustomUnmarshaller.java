@@ -80,9 +80,10 @@ public class CustomUnmarshaller {
                 vnfc.setCpu(flatVnfc.get(CPU).asInt());
                 vnfc.setMeory(flatVnfc.get(MEMORY).asInt());
                 
+                /*
                 Metric metric = new Metric(flatVnfc.get(METRIC).asInt(), flatVnfc.get(METRIC_THRESHOLD).asInt());                
                 vnfc.setMetric(metric);
-                vdu.getVnfcs().add(vnfc);
+                vdu.getVnfcs().add(vnfc);*/
             }
         } else {
             throw new IllegalArgumentException("Flat json is not an array!");

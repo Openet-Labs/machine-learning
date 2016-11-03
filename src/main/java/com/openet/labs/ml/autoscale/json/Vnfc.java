@@ -5,7 +5,7 @@ public class Vnfc {
     protected String id;
     protected Integer cpu;
     protected Integer meory;
-    protected Metric metric;
+    //protected Metric metric;
 
     public Vnfc() {
     }
@@ -44,6 +44,7 @@ public class Vnfc {
         this.meory = meory;
     }
 
+    /*
     public Metric getMetric() {
         return metric;
     }
@@ -51,6 +52,6 @@ public class Vnfc {
     public void setMetric(Metric metric) {
         this.metric = metric;
     }
-    
+    */
     
 }
