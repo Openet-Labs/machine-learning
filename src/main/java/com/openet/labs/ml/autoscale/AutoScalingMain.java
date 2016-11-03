@@ -1,6 +1,7 @@
 package com.openet.labs.ml.autoscale;
 
 import com.openet.labs.ml.autoscale.utils.EnigmaKafkaUtils;
+import com.openet.labs.ml.autoscale.utils.UdfTimestampAddMinutes;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampToDayOfWeek;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampToMinOfHour;
 import java.io.FileNotFoundException;
@@ -9,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
+import java.util.AbstractList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ import org.apache.spark.ml.regression.RandomForestRegressor;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.api.java.UDF1;
+import org.apache.spark.sql.api.java.UDF2;
 import static org.apache.spark.sql.functions.callUDF;
 import static org.apache.spark.sql.functions.explode;
 import org.apache.spark.sql.types.DataTypes;
@@ -47,6 +50,7 @@ import static org.apache.spark.sql.functions.callUDF;
 import static org.apache.spark.sql.functions.callUDF;
 import static org.apache.spark.sql.functions.callUDF;
 import static org.apache.spark.sql.functions.callUDF;
+import static org.apache.spark.sql.functions.lit;
 import scala.collection.mutable.WrappedArray;
 
 public class AutoScalingMain implements Serializable {
@@ -239,21 +243,26 @@ public class AutoScalingMain implements Serializable {
                 .drop(inputVnfcDF.col("vdus"))
                 .drop(inputVnfcDF.col("vnfcs"));
 
+        int minuteInterval = 60;
         DataFrame inputVnfcWithCountDF = inputFinalDF.groupBy("vduid").count()
                 .withColumnRenamed("count", "vnfcCount")
-                .join(inputFinalDF, "vduid");
+                .join(inputFinalDF, "vduid")
+                .withColumn("timestampFuture", callUDF("tsAddMin", inputFinalDF.col("timestamp"), lit(minuteInterval)));
 
         inputVnfcWithCountDF.show(false);
 
-        DataFrame inputPredictDF = inputVnfcWithCountDF.withColumn("dayofweek", callUDF("ts2Day", inputVnfcWithCountDF.col("timestamp").cast("String")))
+//        DataFrame inputPredictDF = inputVnfcWithCountDF.withColumn("dayofweek", callUDF("ts2Day", inputVnfcWithCountDF.col("timestamp").cast("String")))
+//                .withColumn("hrminofday", callUDF("ts2HrMin", inputVnfcWithCountDF.col("timestamp").cast("String")));
+//        inputPredictDF.show();
+//        VectorAssembler assembler = new VectorAssembler().setInputCols(new String[]{"dayofweek", "hrminofday"}).setOutputCol("features");
+//        DataFrame inputPredictVectorDF = assembler.transform(inputPredictDF);
+        DataFrame inputPredictDF = inputVnfcWithCountDF
+                .withColumn("dayofweek", callUDF("ts2Day", inputVnfcWithCountDF.col("timestamp").cast("String")))
                 .withColumn("hrminofday", callUDF("ts2HrMin", inputVnfcWithCountDF.col("timestamp").cast("String")))
-                ;
+                .withColumn("dayofweekFuture", callUDF("ts2Day", inputVnfcWithCountDF.col("timestampFuture").cast("String")))
+                .withColumn("hrminofdayFuture", callUDF("ts2HrMin", inputVnfcWithCountDF.col("timestampFuture").cast("String")));
 
-        VectorAssembler assembler = new VectorAssembler().setInputCols(new String[]{"dayofweek", "hrminofday"}).setOutputCol("features");
-        DataFrame inputPredictVectorDF = assembler.transform(inputPredictDF);
-
-//        inputPredictVectorDF.show();
-        List<String> listVdus = inputPredictVectorDF.select("vduid").javaRDD().map(x -> x.get(0).toString()).distinct().collect();
+        List<String> listVdus = inputPredictDF.select("vduid").javaRDD().map(x -> x.get(0).toString()).distinct().collect();
         LOGGER.info("listVdus: " + listVdus);
 
         DataFrame finalPredictedDF = getSqlContext().emptyDataFrame();
@@ -261,34 +270,51 @@ public class AutoScalingMain implements Serializable {
 
             ItemVdu vduItem = getVduItemsMap().get(vduid);
 
-            DataFrame inputPerVduPredictVectorDF = inputPredictVectorDF.filter(inputPredictVectorDF.col("vduid").equalTo(vduid));
-            DataFrame inputPerVduPredictVnfcDF = vduItem.getModelVnfc().transform(inputPerVduPredictVectorDF);
-            DataFrame inputPerVduPredictCpuDF = vduItem.getModelCpu().transform(inputPerVduPredictVnfcDF);
-            DataFrame inputPerVduPredictMemoryDF = vduItem.getModelMemory().transform(inputPerVduPredictCpuDF);
+            DataFrame inputPerVduPredictDF = inputPredictDF.filter(inputPredictDF.col("vduid").equalTo(vduid));
+
+            // Use current time for cpu and memory
+            String[] featuresNow = new String[]{"dayofweek", "hrminofday"};
+            DataFrame inputPerVduPredictVectorDF = getLabeledDF(inputPerVduPredictDF, featuresNow);
+            DataFrame inputPerVduPredictCpuDF = vduItem.getModelCpu().transform(inputPerVduPredictVectorDF);
+            DataFrame inputPerVduPredictCpuMemoryDF = vduItem.getModelMemory().transform(inputPerVduPredictCpuDF).drop(inputPerVduPredictCpuDF.col("features"));
+            // Use 1 hour in the future for vnfc
+            String[] featuresFuture = new String[]{"dayofweekFuture", "hrminofdayFuture"};
+            DataFrame inputPerVduPredictCpuMemoryVectorDF = getLabeledDF(inputPerVduPredictCpuMemoryDF, featuresFuture);
+            DataFrame inputPerVduPredictCpuMemoryVnfcDF = vduItem.getModelVnfc().transform(inputPerVduPredictCpuMemoryVectorDF);
 
             if (finalPredictedDF.equals(getSqlContext().emptyDataFrame())) {
-                finalPredictedDF = inputPerVduPredictMemoryDF;
+                finalPredictedDF = inputPerVduPredictCpuMemoryVnfcDF;
             } else {
-                finalPredictedDF = finalPredictedDF.unionAll(inputPerVduPredictMemoryDF);
+                finalPredictedDF = finalPredictedDF.unionAll(inputPerVduPredictCpuMemoryVnfcDF);
             }
 
         }
 
-        List<String> listParsed = finalPredictedDF
-                .drop(finalPredictedDF.col("features"))
-                .drop(finalPredictedDF.col("dayofweek"))
-                .drop(finalPredictedDF.col("hrminofday"))
-                .drop(finalPredictedDF.col("timestamp"))
-                .toJSON().toJavaRDD().collect();
-
-        inputDF.unpersist();
-
-        LOGGER.info("Complete parseJsonInput");
+        finalPredictedDF.show();
+//
+        List<String> listParsed = null;
+//        listParsed = finalPredictedDF
+//                .drop(finalPredictedDF.col("features"))
+//                .drop(finalPredictedDF.col("dayofweek"))
+//                .drop(finalPredictedDF.col("hrminofday"))
+//                .drop(finalPredictedDF.col("timestamp"))
+//                .toJSON().toJavaRDD().collect();
+//
+//        inputDF.unpersist();
+//
+//        LOGGER.info("Complete parseJsonInput");
 
         return listParsed;
-
         //        LOGGER.info("listParsed: " + listParsed.toString());        
 //        LOGGER.info("listParsed: " + listParsed.toString());
+    }
+
+    public DataFrame getLabeledDF(DataFrame inputVnfcWithCountDF, String[] features) {
+
+        VectorAssembler assembler = new VectorAssembler().setInputCols(features).setOutputCol("features");
+        DataFrame inputPredictVectorDF = assembler.transform(inputVnfcWithCountDF);
+
+        return inputPredictVectorDF;
     }
 
     public boolean validateInput(String in) {
@@ -331,6 +357,9 @@ public class AutoScalingMain implements Serializable {
 
         UdfTimestampToMinOfHour ts2HrMin = new UdfTimestampToMinOfHour();
         sqlContext.udf().register("ts2HrMin", (UDF1<?, ?>) ts2HrMin, DataTypes.DoubleType);
+
+        UdfTimestampAddMinutes tsAddMin = new UdfTimestampAddMinutes();
+        sqlContext.udf().register("tsAddMin", (UDF2<?, ?, ?>) tsAddMin, DataTypes.LongType);
 
     }
 
