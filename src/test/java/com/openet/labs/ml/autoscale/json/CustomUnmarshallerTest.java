@@ -1,10 +1,12 @@
 package com.openet.labs.ml.autoscale.json;
 
 import com.openet.labs.ml.autoscale.scale.SimpleVnfAsyncScaler;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.After;
@@ -13,63 +15,44 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import org.springframework.http.ResponseEntity;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author ehsun7b
  */
 public class CustomUnmarshallerTest {
-    
+
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(CustomUnmarshallerTest.class);
     private String json;
+
     public CustomUnmarshallerTest() {
     }
-    
+
     @BeforeClass
     public static void setUpClass() {
     }
-    
+
     @AfterClass
     public static void tearDownClass() {
     }
-    
+
     @Before
     public void setUp() {
-        json = "[\n" +
-"{\n" +
-"    \"vduid\": \"squid_347\",\n" +
-"    \"vnfid\": \"webcach_001\",\n" +
-"    \"flavor\": \"small\",\n" +
-"    \"flavors\": [\"small\", \"medium\", \"large\"],\n" +
-"    \"scale_up\": \"http://localhost:8080/vnf/webcach_001/scale_up\",\n" +
-"    \"scale_down\": \"http://localhost:8080/vnf/webcach_001/scale_down\",\n" +
-"    \"scale_to_flavor\": \"http://localhost:8080/vnf/webcach_001/scale/{flavor}\",\n" +
-"    \"timestamp\": 2354244234,\n" +
-"    \"vnfcid\": \"vm250\",\n" +
-"    \"cpu\": 70,\n" +
-"    \"memory\": 4560000,\n" +
-"    \"metric_current\": 274758,\n" +
-"    \"metric_threshold\": 400000\n" +
-"},\n" +
-"{\n" +
-"    \"vduid\": \"squid_347\",\n" +
-"    \"vnfid\": \"webcach_001\",\n" +
-"    \"flavor\": \"small\",\n" +
-"    \"flavors\": [\"small\", \"medium\", \"large\"],\n" +
-"    \"scale_up\": \"http://localhost:8080/vnf/webcach_001/scale_up\",\n" +
-"    \"scale_down\": \"http://localhost:8080/vnf/webcach_001/scale_down\",\n" +
-"    \"scale_to_flavor\": \"http://localhost:8080/vnf/webcach_001/scale/{flavor}\",\n" +
-"    \"timestamp\": 2354244234,\n" +
-"    \"vnfcid\": \"vm250\",\n" +
-"    \"cpu\": 70,\n" +
-"    \"memory\": 4560000,\n" +
-"    \"metric_current\": 274758,\n" +
-"    \"metric_threshold\": 400000\n" +
-"}\n" +
-"]";
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("intermediate.json");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+
+            StringBuilder builder = new StringBuilder();
+            for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                builder.append(line);
+            }
+
+            json = builder.toString();
+        } catch (IOException ex) {
+            log.error(ex.getMessage(), ex);
+        }
     }
-    
+
     @After
     public void tearDown() {
     }
@@ -78,20 +61,20 @@ public class CustomUnmarshallerTest {
     public void testSomeMethod() {
         try {
             List<Vnf> vnf = CustomUnmarshaller.parseFlatJson(json);
-            
+
             System.out.println(vnf.size());
             for (Vnf vnf1 : vnf) {
-                
+
                 System.out.println(vnf1.getId());
                 System.out.println(vnf1.getFlavor());
             }
-            
-           Assert.assertNotNull(vnf);
-           Assert.assertEquals(vnf.size(), 1);
-           Assert.assertEquals(vnf.get(0).getId(), "webcach_001");
-           
+
+            Assert.assertNotNull(vnf);
+            Assert.assertEquals(vnf.size(), 1);
+            Assert.assertEquals(vnf.get(0).getId(), "webcach_001");
+
             SimpleVnfAsyncScaler scaler = new SimpleVnfAsyncScaler(Executors.newCachedThreadPool());
-            
+
             for (Vnf vnf1 : vnf) {
                 scaler.scale(vnf1);
             }
@@ -99,5 +82,5 @@ public class CustomUnmarshallerTest {
             Logger.getLogger(CustomUnmarshallerTest.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
 }

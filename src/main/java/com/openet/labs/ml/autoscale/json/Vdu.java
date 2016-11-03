@@ -6,7 +6,8 @@ import java.util.List;
 public class Vdu {
     protected String id;
     protected List<Vnfc> vnfcs;
-
+    protected Integer predictedVnfc;
+    
     public Vdu() {
         this(null);
     }
@@ -32,5 +33,15 @@ public class Vdu {
         this.vnfcs = vnfcs;
     }
     
-    
+    public int vnfcCount() {
+        return vnfcs.size();
+    }
+
+    public Integer getPredictedVnfc() {
+        return predictedVnfc;
+    }
+
+    public void setPredictedVnfc(Integer predictedVnfc) {
+        this.predictedVnfc = predictedVnfc;
+    }
 }
