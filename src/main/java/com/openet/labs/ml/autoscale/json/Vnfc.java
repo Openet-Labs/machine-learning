@@ -3,8 +3,10 @@ package com.openet.labs.ml.autoscale.json;
 public class Vnfc {
     
     protected String id;
-    protected Integer cpu;
-    protected Integer meory;
+    protected Double cpu;
+    protected Double meory;
+    protected Double predictedCpu;
+    protected Double predictedMeory;
     //protected Metric metric;
 
     public Vnfc() {
@@ -14,7 +16,7 @@ public class Vnfc {
         this.id = id;
     }
 
-    public Vnfc(String id, Integer cpu, Integer meory) {
+    public Vnfc(String id, Double cpu, Double meory) {
         this.id = id;
         this.cpu = cpu;
         this.meory = meory;
@@ -28,22 +30,24 @@ public class Vnfc {
         this.id = id;
     }
 
-    public Integer getCpu() {
+    public Double getCpu() {
         return cpu;
     }
 
-    public void setCpu(Integer cpu) {
+    public void setCpu(Double cpu) {
         this.cpu = cpu;
     }
 
-    public Integer getMeory() {
+    public Double getMeory() {
         return meory;
     }
 
-    public void setMeory(Integer meory) {
+    public void setMeory(Double meory) {
         this.meory = meory;
     }
 
+    
+    
     /*
     public Metric getMetric() {
         return metric;
@@ -53,5 +57,21 @@ public class Vnfc {
         this.metric = metric;
     }
     */
+
+    public Double getPredictedCpu() {
+        return predictedCpu;
+    }
+
+    public void setPredictedCpu(Double predictedCpu) {
+        this.predictedCpu = predictedCpu;
+    }
+
+    public Double getPredictedMeory() {
+        return predictedMeory;
+    }
+
+    public void setPredictedMeory(Double predictedMeory) {
+        this.predictedMeory = predictedMeory;
+    }
     
 }

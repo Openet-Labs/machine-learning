@@ -26,7 +26,10 @@ public class CustomUnmarshaller {
     private static final String CPU = "cpu";
     private static final String MEMORY = "memory";
     private static final String METRIC = "metric_current";
-    private static final String METRIC_THRESHOLD = "metric_threshold";
+    private static final String PRE_VNFC = "predictedVnfc";
+    private static final String PRE_CPU = "predictedVnfc";
+    private static final String PRE_MEMORY = "predictedVnfc";
+    
     
     public static List<Vnf> parseFlatJson(final String vnfcs) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
@@ -71,14 +74,17 @@ public class CustomUnmarshaller {
                 try {
                     vdu = findVduById(vnf.getVdus(), vduId);
                 } catch (NoSuchElementException ex) {
-                    vdu = new Vdu(vduId);
+                    vdu = new Vdu(vduId);     
+                    vdu.setPredictedVnfc(flatVnfc.get(PRE_VNFC).asInt());
                     vnf.getVdus().add(vdu);
                 }
 
                 String vnfcId = flatVnfc.get(VNFC_ID).asText();
                 Vnfc vnfc = new Vnfc(vnfcId);
-                vnfc.setCpu(flatVnfc.get(CPU).asInt());
-                vnfc.setMeory(flatVnfc.get(MEMORY).asInt());
+                vnfc.setCpu(flatVnfc.get(CPU).asDouble());
+                vnfc.setMeory(flatVnfc.get(MEMORY).asDouble());
+                vnfc.setPredictedCpu(flatVnfc.get(PRE_CPU).asDouble());
+                vnfc.setPredictedCpu(flatVnfc.get(PRE_MEMORY).asDouble());
                 
                 /*
                 Metric metric = new Metric(flatVnfc.get(METRIC).asInt(), flatVnfc.get(METRIC_THRESHOLD).asInt());                
