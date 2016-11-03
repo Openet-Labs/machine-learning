@@ -3,11 +3,14 @@ package com.openet.labs.ml.autoscale.scale;
 import com.openet.labs.ml.autoscale.json.Vnf;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
 public class SimpleVnfAsyncScaler extends Scaler {
     
+    private static final Logger log = LoggerFactory.getLogger(SimpleVnfAsyncScaler.class);
     protected final ExecutorService executor;
 
     public SimpleVnfAsyncScaler(ExecutorService executor) {
@@ -17,10 +20,14 @@ public class SimpleVnfAsyncScaler extends Scaler {
     @Override
     public Future<ResponseEntity<String>> scale(Scalable scalable) {
         Vnf vnf = (Vnf) scalable;
-
+        
+        log.debug("Scaling VNF " + vnf.getId());
+        
         ScaleType type = calculateScaleType(vnf);
         String link = getScaleLink(vnf, type);
         HttpMethod httpMethod = getScaleHttpMethod(type);
+        
+        log.debug("Scale url: " + link);
         
         AsyncHttpRequest asyncHttpRequest = new AsyncHttpRequest(link, httpMethod);        
         Future<ResponseEntity<String>> response = executor.submit(asyncHttpRequest);

@@ -49,7 +49,7 @@ public class CustomUnmarshaller {
                     vnf = new Vnf(vnfId);
                     
                     vnf.setFlavor(flatVnfc.get(FLAVOR).asText());
-                    vnf.setScaleToFlavorLink(flatVnfc.get(SCALE_UP).asText());
+                    vnf.setScaleUpLink(flatVnfc.get(SCALE_UP).asText());
                     vnf.setScaleDownLink(flatVnfc.get(SCALE_DOWN).asText());
                     vnf.setScaleToFlavorLink(flatVnfc.get(SCALE_TO).asText());
                     JsonNode flavorsNode = flatVnfc.get(FLAVORS);
