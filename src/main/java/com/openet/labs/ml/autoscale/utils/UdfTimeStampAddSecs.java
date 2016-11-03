@@ -1,5 +1,6 @@
-package com.openet.labs.ml.autoscale;
+package com.openet.labs.ml.autoscale.utils;
 
+import com.openet.labs.ml.autoscale.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import org.apache.spark.sql.api.java.UDF2;
