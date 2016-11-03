@@ -1,5 +1,7 @@
 package com.openet.labs.ml.autoscale.json;
 
+import com.openet.labs.ml.autoscale.scale.Scaler;
+import com.openet.labs.ml.autoscale.scale.ScalerFactory;
 import com.openet.labs.ml.autoscale.scale.SimpleVnfAsyncScaler;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -73,13 +75,14 @@ public class CustomUnmarshallerTest {
             Assert.assertEquals(vnf.size(), 1);
             Assert.assertEquals(vnf.get(0).getId(), "webcach_001");
 
-            SimpleVnfAsyncScaler scaler = new SimpleVnfAsyncScaler(Executors.newCachedThreadPool());
+            Scaler scaler = new ScalerFactory().createScaler(vnf.get(0));           
+                    
 
             for (Vnf vnf1 : vnf) {
                 scaler.scale(vnf1);
             }
         } catch (IOException ex) {
-            Logger.getLogger(CustomUnmarshallerTest.class.getName()).log(Level.SEVERE, null, ex);
+            log.error(ex.getMessage(), ex);
         }
     }
 
