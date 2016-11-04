@@ -1,6 +1,6 @@
 package com.openet.labs.ml.autoscale;
 
-import com.openet.labs.ml.autoscale.json.CustomUnmarshaller;
+import com.openet.labs.ml.autoscale.json.FlatJsonUnmarshaller;
 import com.openet.labs.ml.autoscale.json.Vnf;
 import com.openet.labs.ml.autoscale.scale.Scaler;
 import com.openet.labs.ml.autoscale.scale.ScalerFactory;
@@ -368,7 +368,7 @@ public class AutoScalingMain implements Serializable {
 
     public void doScaling(List<String> listScale) throws IOException, InterruptedException, ExecutionException {
 
-        List<Vnf> vnf = CustomUnmarshaller.parseFlatJson(listScale.toString());
+        List<Vnf> vnf = FlatJsonUnmarshaller.parseFlatJson(listScale.toString());
 
         LOGGER.info("vnf: " + vnf.size());
 
