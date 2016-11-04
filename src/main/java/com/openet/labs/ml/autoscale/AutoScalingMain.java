@@ -1,23 +1,23 @@
 package com.openet.labs.ml.autoscale;
 
+import com.openet.labs.ml.autoscale.json.CustomUnmarshaller;
+import com.openet.labs.ml.autoscale.json.Vnf;
+import com.openet.labs.ml.autoscale.scale.Scaler;
+import com.openet.labs.ml.autoscale.scale.ScalerFactory;
 import com.openet.labs.ml.autoscale.utils.EnigmaKafkaUtils;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampAddMinutes;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampToDayOfWeek;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampToMinOfHour;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
-import java.util.AbstractList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.TimeZone;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
@@ -30,28 +30,18 @@ import org.apache.spark.ml.PipelineModel;
 import org.apache.spark.ml.PipelineStage;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.regression.DecisionTreeRegressor;
-import org.apache.spark.ml.regression.RandomForestRegressor;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.api.java.UDF1;
 import org.apache.spark.sql.api.java.UDF2;
-import static org.apache.spark.sql.functions.callUDF;
 import static org.apache.spark.sql.functions.explode;
 import org.apache.spark.sql.types.DataTypes;
-import static org.apache.spark.sql.functions.callUDF;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import static org.apache.spark.sql.functions.callUDF;
-import static org.apache.spark.sql.functions.callUDF;
-import static org.apache.spark.sql.functions.callUDF;
-import static org.apache.spark.sql.functions.callUDF;
-import static org.apache.spark.sql.functions.callUDF;
-import static org.apache.spark.sql.functions.callUDF;
-import static org.apache.spark.sql.functions.callUDF;
-import static org.apache.spark.sql.functions.callUDF;
 import static org.apache.spark.sql.functions.lit;
-import scala.collection.mutable.WrappedArray;
+import org.springframework.http.ResponseEntity;
+import static org.apache.spark.sql.functions.callUDF;
 
 public class AutoScalingMain implements Serializable {
 
@@ -60,7 +50,6 @@ public class AutoScalingMain implements Serializable {
     private static final Logger LOGGER = Logger.getLogger(AutoScalingMain.class);
 
     private Properties properties;
-
     private PropertiesParser parser;
 
     //Kafka
@@ -81,13 +70,9 @@ public class AutoScalingMain implements Serializable {
     private Map<String, PipelineModel> pipelineModelMap;
     private Map<String, ItemVdu> vduItemsMap;
 
-    public Map<String, ItemVdu> getVduItemsMap() {
-        return vduItemsMap;
-    }
-
-    public void setVduItemsMap(Map<String, ItemVdu> vduItemsMap) {
-        this.vduItemsMap = vduItemsMap;
-    }
+    //Params
+    private Integer streamDuration;
+    private Integer futureInterval;
 
     public static void main(String[] args) {
 
@@ -105,7 +90,7 @@ public class AutoScalingMain implements Serializable {
 
             setSqlContext(new SQLContext(getJavaSparkContext()));
             registerUdfs(getSqlContext());
-            setJavaStreamingContext(new JavaStreamingContext(jsc, Durations.milliseconds(2000)));
+            setJavaStreamingContext(new JavaStreamingContext(jsc, Durations.milliseconds(getStreamDuration())));
         }
         setPipelineModelMap(new HashMap<>());
         setVduItemsMap(new HashMap<>());
@@ -227,7 +212,7 @@ public class AutoScalingMain implements Serializable {
 
     }
 
-    public List<String> parseJsonInput(JavaRDD<String> inputRDD) {
+    public DataFrame parseJsonInput(JavaRDD<String> inputRDD) {
 
         LOGGER.info("Start parseJsonInput");
 
@@ -243,19 +228,12 @@ public class AutoScalingMain implements Serializable {
                 .drop(inputVnfcDF.col("vdus"))
                 .drop(inputVnfcDF.col("vnfcs"));
 
-        int minuteInterval = 60;
+        int minuteInterval = getFutureInterval();
         DataFrame inputVnfcWithCountDF = inputFinalDF.groupBy("vduid").count()
                 .withColumnRenamed("count", "vnfcCount")
                 .join(inputFinalDF, "vduid")
                 .withColumn("timestampFuture", callUDF("tsAddMin", inputFinalDF.col("timestamp"), lit(minuteInterval)));
 
-        inputVnfcWithCountDF.show(false);
-
-//        DataFrame inputPredictDF = inputVnfcWithCountDF.withColumn("dayofweek", callUDF("ts2Day", inputVnfcWithCountDF.col("timestamp").cast("String")))
-//                .withColumn("hrminofday", callUDF("ts2HrMin", inputVnfcWithCountDF.col("timestamp").cast("String")));
-//        inputPredictDF.show();
-//        VectorAssembler assembler = new VectorAssembler().setInputCols(new String[]{"dayofweek", "hrminofday"}).setOutputCol("features");
-//        DataFrame inputPredictVectorDF = assembler.transform(inputPredictDF);
         DataFrame inputPredictDF = inputVnfcWithCountDF
                 .withColumn("dayofweek", callUDF("ts2Day", inputVnfcWithCountDF.col("timestamp").cast("String")))
                 .withColumn("hrminofday", callUDF("ts2HrMin", inputVnfcWithCountDF.col("timestamp").cast("String")))
@@ -290,23 +268,31 @@ public class AutoScalingMain implements Serializable {
 
         }
 
-        finalPredictedDF.show();
-//
-        List<String> listParsed = null;
-//        listParsed = finalPredictedDF
-//                .drop(finalPredictedDF.col("features"))
-//                .drop(finalPredictedDF.col("dayofweek"))
-//                .drop(finalPredictedDF.col("hrminofday"))
-//                .drop(finalPredictedDF.col("timestamp"))
-//                .toJSON().toJavaRDD().collect();
-//
+//        finalPredictedDF.show();
+        return finalPredictedDF;
 //        inputDF.unpersist();
-//
 //        LOGGER.info("Complete parseJsonInput");
 
-        return listParsed;
-        //        LOGGER.info("listParsed: " + listParsed.toString());        
+    }
+
+    public List<String> convertDataFrameToJson(DataFrame finalPredictedDF) {
+
+        List<String> listParsed = null;
+        listParsed = finalPredictedDF
+                .drop(finalPredictedDF.col("features"))
+                .drop(finalPredictedDF.col("dayofweek"))
+                .drop(finalPredictedDF.col("hrminofday"))
+                .drop(finalPredictedDF.col("timestamp"))
+                .drop(finalPredictedDF.col("timestampFuture"))
+                .drop(finalPredictedDF.col("dayofweekFuture"))
+                .drop(finalPredictedDF.col("hrminofdayFuture"))
+                .toJSON().toJavaRDD().collect();
+
+//        LOGGER.info("listParsed: " + listParsed.toString());        
 //        LOGGER.info("listParsed: " + listParsed.toString());
+        LOGGER.info("Complete convertDataFrameToJson");
+
+        return listParsed;
     }
 
     public DataFrame getLabeledDF(DataFrame inputVnfcWithCountDF, String[] features) {
@@ -337,12 +323,62 @@ public class AutoScalingMain implements Serializable {
         return true;
     }
 
-    private void voting() {
+    public void voting(DataFrame finalPredictedDF) throws IOException, InterruptedException, ExecutionException {
 
         // reactive scale up, predictive scale up = take bigger number
         // reactive scale up, predictive scale down = take reactive
         // reactive scale down, predictive scale up = take predictive, unless predictive is wrong
         // reactive scale down, predictive scale down = take reactive
+        // scaling up logic, reactive
+        // get cpu/memory higher than expected
+        String queryCpuMemory = "SELECT vnfid FROM dataTable WHERE (cpu > predictedCpu) OR (memory > predictedMemory)";
+        finalPredictedDF.registerTempTable("dataTable");
+        DataFrame reactiveScaleUpDF = getSqlContext().sql(queryCpuMemory);
+//        reactiveScaleUpDF.show(false);
+        // get predictive scale up
+        String queryPredictiveScaleUp = "SELECT vnfid FROM dataTable WHERE predictedVnfc > vnfcCount";
+        DataFrame predictiveScaleUpDF = getSqlContext().sql(queryPredictiveScaleUp);
+//        predictiveScaleUpDF.show(false);
+
+        DataFrame scaleUpVnfDF = reactiveScaleUpDF.unionAll(predictiveScaleUpDF);
+        scaleUpVnfDF = scaleUpVnfDF.select(scaleUpVnfDF.col("vnfid")).distinct();
+        scaleUpVnfDF.registerTempTable("scaleUpVnfTable");
+
+        // get predictive scale down, but dont include vnf that scale up
+        String queryPredictiveScaleDown = "SELECT vnfid FROM dataTable WHERE (vnfcCount > predictedVnfc) EXCEPT (SELECT vnfid FROM scaleUpVnfTable)";
+        DataFrame predictiveScaleDownDF = getSqlContext().sql(queryPredictiveScaleDown).distinct();
+        predictiveScaleDownDF.registerTempTable("scaleDownVnfTable");
+        predictiveScaleDownDF.show(false);
+
+        DataFrame scaleUpDF = predictiveScaleDownDF.join(finalPredictedDF, "vnfid").withColumn("scale_type", lit("up"));
+        List<String> listScaleUp = convertDataFrameToJson(scaleUpDF);
+        scaleUpDF.show();
+
+        DataFrame scaleDownDF = predictiveScaleDownDF.join(finalPredictedDF, "vnfid").withColumn("scale_type", lit("down"));
+        List<String> listScaleDown = convertDataFrameToJson(scaleDownDF);
+        scaleDownDF.show();
+
+        LOGGER.info("listScaleDown: " + listScaleDown);
+        LOGGER.info("listScaleUp: " + listScaleUp);
+
+        doScaling(listScaleUp);
+        doScaling(listScaleDown);
+
+    }
+
+    public void doScaling(List<String> listScale) throws IOException, InterruptedException, ExecutionException {
+
+        List<Vnf> vnf = CustomUnmarshaller.parseFlatJson(listScale.toString());
+
+        LOGGER.info("vnf: " + vnf.size());
+
+        Scaler scaler = new ScalerFactory().createScaler(vnf.get(0));
+
+        for (Vnf vnf1 : vnf) {
+            Future<ResponseEntity<String>> scaleResponse = (Future<ResponseEntity<String>>) scaler.scale(vnf1);
+            LOGGER.info("scale: " + scaleResponse.get());
+        }
+
     }
 
     public JavaRDD<String> getTrainingData() {
@@ -373,6 +409,9 @@ public class AutoScalingMain implements Serializable {
         setZookeeperQuorum(getParser().getKafkaZookeeperQuorum(getUseCaseProperties()));
         setKafkaBroker(getParser().getKafkaBroker(getUseCaseProperties()));
 
+        setFutureInterval(getParser().getPredictionInterval(getUseCaseProperties()));
+        setStreamDuration(getParser().getStreamingDuration(getUseCaseProperties()));
+
     }
 
     private void enableFileLog() {
@@ -396,6 +435,30 @@ public class AutoScalingMain implements Serializable {
     }
 
     //<editor-fold defaultstate="collapsed" desc="Getters and Setters">
+    public Map<String, ItemVdu> getVduItemsMap() {
+        return vduItemsMap;
+    }
+
+    public void setVduItemsMap(Map<String, ItemVdu> vduItemsMap) {
+        this.vduItemsMap = vduItemsMap;
+    }
+
+    public Integer getStreamDuration() {
+        return streamDuration;
+    }
+
+    public void setStreamDuration(Integer streamDuration) {
+        this.streamDuration = streamDuration;
+    }
+
+    public Integer getFutureInterval() {
+        return futureInterval;
+    }
+
+    public void setFutureInterval(Integer futureInterval) {
+        this.futureInterval = futureInterval;
+    }
+
     public JavaStreamingContext getJavaStreamingContext() {
         return javaStreamingContext;
     }

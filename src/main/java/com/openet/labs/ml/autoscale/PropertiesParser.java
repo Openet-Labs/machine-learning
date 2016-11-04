@@ -48,4 +48,20 @@ public class PropertiesParser implements Serializable {
         }
     }
 
+    public Integer getPredictionInterval(Properties properties) {
+        try {
+            return Integer.parseInt(properties.getProperty("autoscaling.future.interval"));
+        } catch (NumberFormatException | NullPointerException ex) {
+            return 1;
+        }
+    }
+    
+    public Integer getStreamingDuration(Properties properties) {
+        try {
+            return Integer.parseInt(properties.getProperty("spark.streaming.duration"));
+        } catch (NumberFormatException | NullPointerException ex) {
+            return 1;
+        }
+    }
+
 }

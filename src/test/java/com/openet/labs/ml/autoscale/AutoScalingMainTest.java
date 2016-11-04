@@ -10,9 +10,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.DataFrame;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -134,6 +136,30 @@ public class AutoScalingMainTest {
         instance.init();
         instance.train();
         instance.parseJsonInput(inputRDD);
+    }
+    
+    
+    /**
+     * Test of testVoting method, of class AutoScalingMain.
+     */
+    @Test
+    public void testVoting() throws IOException, InterruptedException, ExecutionException {
+        System.out.println("testVoting");
+
+        List<String> inputData = new ArrayList<>();
+//        String input1 = "{\"timestamp\":2354244234,\"vnfs\":[{\"id\":\"webcach_001\",\"flavor\":\"small\",\"flavors\":[\"small\",\"medium\",\"large\"],\"vdus\":[{\"id\":\"squid_347\",\"vnfcs\":[{\"id\":\"vm250\",\"cpu\":70,\"memory\":4560000},{\"id\":\"vm251\",\"cpu\":70,\"memory\":4560000},{\"id\":\"vm253\",\"cpu\":70,\"memory\":4560000}]},{\"id\":\"request_logger_437\",\"vnfcs\":[{\"id\":\"vm350\",\"cpu\":70,\"memory\":4560000}]}],\"_links\":{\"scale_up\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale_up\"},\"scale_down\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale_down\"},\"scale_to_flavor\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale/{flavor}\"}}}]}";
+        String input1 = "{\"timestamp\":2354244234,\"vnfs\":[{\"id\":\"webcach_001\",\"flavor\":\"small\",\"flavors\":[\"small\",\"medium\",\"large\"],\"vdus\":[{\"id\":\"squid_347\",\"vnfcs\":[{\"id\":\"vm250\",\"cpu\":50,\"memory\":40},{\"id\":\"vm251\",\"cpu\":70,\"memory\":40},{\"id\":\"vm253\",\"cpu\":50,\"memory\":40}]},{\"id\":\"request_logger_437\",\"vnfcs\":[{\"id\":\"vm350\",\"cpu\":50,\"memory\":65}]}],\"_links\":{\"scale_up\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale_up\"},\"scale_down\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale_down\"},\"scale_to_flavor\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale/{flavor}\"}}}]}";        
+        String input2 ="{\"timestamp\":2354244234,\"vnfs\":[{\"id\":\"webcach_002\",\"flavor\":\"small\",\"flavors\":[\"small\",\"medium\",\"large\"],\"vdus\":[{\"id\":\"request_logger_437\",\"vnfcs\":[{\"id\":\"vm350\",\"cpu\":50,\"memory\":50},{\"id\":\"vm351\",\"cpu\":50,\"memory\":50},{\"id\":\"vm352\",\"cpu\":50,\"memory\":50},{\"id\":\"vm353\",\"cpu\":50,\"memory\":50},{\"id\":\"vm354\",\"cpu\":50,\"memory\":50},{\"id\":\"vm355\",\"cpu\":50,\"memory\":50}]}],\"_links\":{\"scale_up\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale_up\"},\"scale_down\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale_down\"},\"scale_to_flavor\":{\"href\":\"http://localhost:8080/vnf/webcach_001/scale/{flavor}\"}}}]}";
+        inputData.add(input1);
+        inputData.add(input2);
+        JavaRDD inputRDD = jsc.parallelize(inputData);
+
+        AutoScalingMain instance = new AutoScalingMain();
+        instance.setJavaSparkContext(jsc);
+        instance.init();
+        instance.train();
+        DataFrame finalPredictedDF = instance.parseJsonInput(inputRDD);
+        instance.voting(finalPredictedDF);
     }
 
 }
