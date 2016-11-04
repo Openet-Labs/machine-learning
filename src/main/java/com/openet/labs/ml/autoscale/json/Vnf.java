@@ -1,6 +1,7 @@
 package com.openet.labs.ml.autoscale.json;
 
 import com.openet.labs.ml.autoscale.scale.Scalable;
+import com.openet.labs.ml.autoscale.scale.ScaleType;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -15,6 +16,7 @@ public class Vnf implements Scalable {
     protected String scaleUpLink;
     protected String scaleDownLink;
     protected String scaleToFlavorLink;
+    protected ScaleType scaleType;
 
     public Vnf() {
         this(null);
@@ -83,6 +85,14 @@ public class Vnf implements Scalable {
         this.scaleToFlavorLink = scaleToFlavorLink;
     }
 
+    public ScaleType getScaleType() {
+        return scaleType;
+    }
+
+    public void setScaleType(ScaleType scaleType) {
+        this.scaleType = scaleType;
+    }
+    
     @Override
     public String getScaleToFlavorLinkParam() {
         return FLAVOR_PARAM;

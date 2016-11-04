@@ -3,6 +3,7 @@ package com.openet.labs.ml.autoscale.json;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
+import com.openet.labs.ml.autoscale.scale.ScaleType;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,10 +12,10 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CustomUnmarshaller {
+public class FlatJsonUnmarshaller {
 
-    private static final Logger log = LoggerFactory.getLogger(CustomUnmarshaller.class);
-    
+    private static final Logger log = LoggerFactory.getLogger(FlatJsonUnmarshaller.class);
+
     private static final String VNF_ID = "vnfid";
     private static final String VDU_ID = "vduid";
     private static final String VNFC_ID = "vnfcid";
@@ -29,8 +30,10 @@ public class CustomUnmarshaller {
     private static final String PRE_VNFC = "predictedVnfc";
     private static final String PRE_CPU = "predictedVnfc";
     private static final String PRE_MEMORY = "predictedVnfc";
-    
-    
+    private static final String SCALE_TYPE = "scale_type";
+    private static final String UP = "up";
+    private static final String DOWN = "down";
+
     public static List<Vnf> parseFlatJson(final String vnfcs) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(vnfcs);
@@ -50,13 +53,14 @@ public class CustomUnmarshaller {
                     vnf = findVnfById(result, vnfId);
                 } catch (NoSuchElementException ex) {
                     vnf = new Vnf(vnfId);
-                    
+
                     vnf.setFlavor(flatVnfc.get(FLAVOR).asText());
                     vnf.setScaleUpLink(flatVnfc.get(SCALE_UP).asText());
                     vnf.setScaleDownLink(flatVnfc.get(SCALE_DOWN).asText());
                     vnf.setScaleToFlavorLink(flatVnfc.get(SCALE_TO).asText());
                     JsonNode flavorsNode = flatVnfc.get(FLAVORS);
-                    
+                    ScaleType scaleType = parseScaleType(flatVnfc.get(SCALE_TYPE).asText());
+
                     if (flavorsNode.isArray()) {
                         for (JsonNode jsonNode : flavorsNode) {
                             vnf.getFlavors().add(jsonNode.asText());
@@ -64,7 +68,7 @@ public class CustomUnmarshaller {
                     } else {
                         throw new IllegalArgumentException("Flavors in flat json is not an array!");
                     }
-                    
+
                     result.add(vnf);
                 }
 
@@ -74,7 +78,7 @@ public class CustomUnmarshaller {
                 try {
                     vdu = findVduById(vnf.getVdus(), vduId);
                 } catch (NoSuchElementException ex) {
-                    vdu = new Vdu(vduId);     
+                    vdu = new Vdu(vduId);
                     vdu.setPredictedVnfc(flatVnfc.get(PRE_VNFC).asInt());
                     vnf.getVdus().add(vdu);
                 }
@@ -85,7 +89,7 @@ public class CustomUnmarshaller {
                 vnfc.setMeory(flatVnfc.get(MEMORY).asDouble());
                 vnfc.setPredictedCpu(flatVnfc.get(PRE_CPU).asDouble());
                 vnfc.setPredictedCpu(flatVnfc.get(PRE_MEMORY).asDouble());
-                
+
                 /*
                 Metric metric = new Metric(flatVnfc.get(METRIC).asInt(), flatVnfc.get(METRIC_THRESHOLD).asInt());                
                 vnfc.setMetric(metric);
@@ -107,5 +111,15 @@ public class CustomUnmarshaller {
         Optional<Vdu> findFirst = list.stream().filter((vdu) -> (Objects.equal(vdu.getId(), vduId))).findFirst();
         return findFirst.get();
     }
-}
 
+    private static ScaleType parseScaleType(String value) {
+        switch (value) {
+            case UP:
+                return new ScaleType(ScaleType.Type.UP);
+            case DOWN:
+                return new ScaleType(ScaleType.Type.UP);
+            default:
+                throw new IllegalArgumentException("Can not parse scale type: " + value);
+        }
+    }
+}
