@@ -30,7 +30,7 @@ public class SimpleVnfAsyncScaler extends Scaler {
         
         log.debug("Scaling VNF " + vnf.getId());
         
-        ScaleType type = calculateScaleType(vnf);
+        ScaleType type = vnf.getScaleType(); // by right should call calculateScaleType method
         String link = getScaleLink(vnf, type);
         HttpMethod httpMethod = getScaleHttpMethod(type);
         
@@ -41,10 +41,10 @@ public class SimpleVnfAsyncScaler extends Scaler {
         return response;
     }
 
+    /*
     private ScaleType calculateScaleType(Vnf vnf) {
-        // TODO: the conditions for scaling will come here
-        return new ScaleType(ScaleType.Type.FLAVOR, "big");
-    }
+        return vnf.getScaleType();
+    }*/
 
     private String getScaleLink(Vnf vnf, ScaleType type) {
         switch (type.getType()) {

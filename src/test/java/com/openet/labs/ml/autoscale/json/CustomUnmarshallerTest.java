@@ -62,7 +62,7 @@ public class CustomUnmarshallerTest {
     @Test
     public void testSomeMethod() {
         try {
-            List<Vnf> vnf = CustomUnmarshaller.parseFlatJson(json);
+            List<Vnf> vnf = FlatJsonUnmarshaller.parseFlatJson(json);
 
             System.out.println(vnf.size());
             for (Vnf vnf1 : vnf) {
