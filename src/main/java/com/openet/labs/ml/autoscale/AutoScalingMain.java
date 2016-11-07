@@ -9,9 +9,10 @@ import com.openet.labs.ml.autoscale.utils.UdfTimestampAddMinutes;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampToDayOfWeek;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampToMinOfHour;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
@@ -42,6 +44,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import static org.apache.spark.sql.functions.lit;
 import org.springframework.http.ResponseEntity;
 import static org.apache.spark.sql.functions.callUDF;
+import org.kohsuke.args4j.CmdLineException;
 
 public class AutoScalingMain implements Serializable {
 
@@ -51,6 +54,15 @@ public class AutoScalingMain implements Serializable {
 
     private Properties properties;
     private PropertiesParser parser;
+    String propertiesPath;
+
+    public String getPropertiesPath() {
+        return propertiesPath;
+    }
+
+    public void setPropertiesPath(String propertiesPath) {
+        this.propertiesPath = propertiesPath;
+    }
 
     //Kafka
     private EnigmaKafkaUtils enigmaKafkaUtils;
@@ -74,7 +86,19 @@ public class AutoScalingMain implements Serializable {
     private Integer streamDuration;
     private Integer futureInterval;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, CmdLineException {
+
+        AutoScalingOptions arguments = new AutoScalingOptions(args);
+        AutoScalingMain instance = new AutoScalingMain();
+        instance.setPropertiesPath(arguments.getUseCaseConfFilePath());
+        SparkConf sparkConf = new SparkConf().setAppName("com.openet.enigma.autoscaling").setMaster("local[2]");
+        instance.setJavaSparkContext(new JavaSparkContext(sparkConf));
+        instance.init();
+        instance.train();
+        instance.processInputStream();
+        instance.getJavaStreamingContext().start();
+        instance.getJavaStreamingContext().awaitTermination();
+        instance.close();
 
     }
 
@@ -115,7 +139,6 @@ public class AutoScalingMain implements Serializable {
         LOGGER.info("trainDataRDD records: " + trainDataRDD.count());
         // Convert RDD string JSON into dataframe
         DataFrame inputTrainDF = getSqlContext().read().json(trainDataRDD).cache();
-        LOGGER.debug("Input Train DataFrame: " + inputTrainDF.first());
         LOGGER.info("inputTrainDF records: " + inputTrainDF.count());
 
         List<String> listVdus = inputTrainDF.select("Vdu").javaRDD().map(x -> x.get(0).toString()).distinct().collect();
@@ -127,7 +150,6 @@ public class AutoScalingMain implements Serializable {
         VectorAssembler assembler = new VectorAssembler().setInputCols(new String[]{"dayofweek", "hrminofday"}).setOutputCol("features");
         DataFrame inputTrainVectorDF = assembler.transform(inputTrainFeaturesDF);
 
-        LOGGER.debug("inputTrainVectorDF: " + inputTrainVectorDF.first());
         LOGGER.info("inputTrainVectorDF records: " + inputTrainVectorDF.count());
 
         for (String vduId : listVdus) {
@@ -193,17 +215,15 @@ public class AutoScalingMain implements Serializable {
 
                     JavaRDD<String> validatedInputRDD = inputRDD.filter(x -> validateInput(x));
 
-//                    if (validatedInputRDD.count() > 0) {
-//
-//                        VnfMigrateEntry vme = processMain(validatedInputRDD);
-//                        if (vme.isIsMoveVnf() && !isIsMovingVnf()) {
-//                            LOGGER.info("Starting to move VNF");
-//                            moveVnf(vme);
-//                        }
-//
-//                    } else {
-//                        LOGGER.info("Invalid Input!");
-//                    }
+                    if (validatedInputRDD.count() > 0) {
+
+                        LOGGER.info("validatedInputRDD: " + validatedInputRDD.count());
+                        DataFrame finalPredictedDF = parseJsonInput(inputRDD);
+                        voting(finalPredictedDF);
+
+                    } else {
+                        LOGGER.info("Invalid Input!");
+                    }
                 }
 
             }
@@ -268,10 +288,8 @@ public class AutoScalingMain implements Serializable {
 
         }
 
-//        finalPredictedDF.show();
+        LOGGER.info("Complete parseJsonInput");
         return finalPredictedDF;
-//        inputDF.unpersist();
-//        LOGGER.info("Complete parseJsonInput");
 
     }
 
@@ -288,8 +306,6 @@ public class AutoScalingMain implements Serializable {
                 .drop(finalPredictedDF.col("hrminofdayFuture"))
                 .toJSON().toJavaRDD().collect();
 
-//        LOGGER.info("listParsed: " + listParsed.toString());        
-//        LOGGER.info("listParsed: " + listParsed.toString());
         LOGGER.info("Complete convertDataFrameToJson");
 
         return listParsed;
@@ -305,21 +321,18 @@ public class AutoScalingMain implements Serializable {
 
     public boolean validateInput(String in) {
 
-//        if (!in.contains("SFC")) {
-//            return false;
-//        }
-//        if (!in.contains("Node_Topology")) {
-//            return false;
-//        }
-//        if (!in.contains("Link_Latency")) {
-//            return false;
-//        }
-//        if (!in.contains("Timestamp")) {
-//            return false;
-//        }
-//        if (in.equals(null) || in.equals("")) {
-//            return false;
-//        }
+        if (!in.contains("timestamp")) {
+            return false;
+        }
+        if (!in.contains("vnfs")) {
+            return false;
+        }
+        if (!in.contains("_links")) {
+            return false;
+        }
+        if (in.equals(null) || in.equals("")) {
+            return false;
+        }
         return true;
     }
 
@@ -334,11 +347,9 @@ public class AutoScalingMain implements Serializable {
         String queryCpuMemory = "SELECT vnfid FROM dataTable WHERE (cpu > predictedCpu) OR (memory > predictedMemory)";
         finalPredictedDF.registerTempTable("dataTable");
         DataFrame reactiveScaleUpDF = getSqlContext().sql(queryCpuMemory);
-//        reactiveScaleUpDF.show(false);
         // get predictive scale up
         String queryPredictiveScaleUp = "SELECT vnfid FROM dataTable WHERE predictedVnfc > vnfcCount";
         DataFrame predictiveScaleUpDF = getSqlContext().sql(queryPredictiveScaleUp);
-//        predictiveScaleUpDF.show(false);
 
         DataFrame scaleUpVnfDF = reactiveScaleUpDF.unionAll(predictiveScaleUpDF);
         scaleUpVnfDF = scaleUpVnfDF.select(scaleUpVnfDF.col("vnfid")).distinct();
@@ -348,36 +359,50 @@ public class AutoScalingMain implements Serializable {
         String queryPredictiveScaleDown = "SELECT vnfid FROM dataTable WHERE (vnfcCount > predictedVnfc) EXCEPT (SELECT vnfid FROM scaleUpVnfTable)";
         DataFrame predictiveScaleDownDF = getSqlContext().sql(queryPredictiveScaleDown).distinct();
         predictiveScaleDownDF.registerTempTable("scaleDownVnfTable");
-        predictiveScaleDownDF.show(false);
 
         DataFrame scaleUpDF = predictiveScaleDownDF.join(finalPredictedDF, "vnfid").withColumn("scale_type", lit("up"));
         List<String> listScaleUp = convertDataFrameToJson(scaleUpDF);
-        scaleUpDF.show();
 
         DataFrame scaleDownDF = predictiveScaleDownDF.join(finalPredictedDF, "vnfid").withColumn("scale_type", lit("down"));
         List<String> listScaleDown = convertDataFrameToJson(scaleDownDF);
-        scaleDownDF.show();
 
-        LOGGER.info("listScaleDown: " + listScaleDown);
-        LOGGER.info("listScaleUp: " + listScaleUp);
+        try {
+            if (listScaleUp.size() > 0) {
+                List<Future<ResponseEntity<String>>> scalingResponses = doScaling(listScaleUp);
+                for (Future<ResponseEntity<String>> scalingResponse : scalingResponses) {
+                    LOGGER.info("scale: " + scalingResponse.get());
+                }
 
-        doScaling(listScaleUp);
-        doScaling(listScaleDown);
+            }
+            if (listScaleDown.size() > 0) {
+                List<Future<ResponseEntity<String>>> scalingResponses = doScaling(listScaleDown);
+                for (Future<ResponseEntity<String>> scalingResponse : scalingResponses) {
+                    LOGGER.info("scale: " + scalingResponse.get());
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.info("Error Scaling: " + e.getMessage());
+        }
 
     }
 
-    public void doScaling(List<String> listScale) throws IOException, InterruptedException, ExecutionException {
+    public List<Future<ResponseEntity<String>>> doScaling(List<String> listScale) throws IOException, InterruptedException, ExecutionException {
 
         List<Vnf> vnf = FlatJsonUnmarshaller.parseFlatJson(listScale.toString());
 
         LOGGER.info("vnf: " + vnf.size());
 
+        List<Future<ResponseEntity<String>>> scalingResponses = new ArrayList<>();
+
         Scaler scaler = new ScalerFactory().createScaler(vnf.get(0));
 
         for (Vnf vnf1 : vnf) {
             Future<ResponseEntity<String>> scaleResponse = (Future<ResponseEntity<String>>) scaler.scale(vnf1);
-            LOGGER.info("scale: " + scaleResponse.get());
+            scalingResponses.add(scaleResponse);
+
         }
+
+        return scalingResponses;
 
     }
 
@@ -496,9 +521,7 @@ public class AutoScalingMain implements Serializable {
             return properties;
         }
         properties = new Properties();
-
-        URL url = ClassLoader.getSystemResource("application.properties");
-        properties.load(url.openStream());
+        properties.load(new FileReader(getPropertiesPath()));
         return properties;
     }
 

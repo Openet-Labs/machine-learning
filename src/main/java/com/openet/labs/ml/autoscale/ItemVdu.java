@@ -9,7 +9,6 @@ public class ItemVdu implements Serializable {
 
     String vduId;
     PipelineModel modelVnfc;
-//    PipelineModel modelMetric;
     PipelineModel modelCpu;
     PipelineModel modelMemory;
 
@@ -34,14 +33,6 @@ public class ItemVdu implements Serializable {
     public void setModelVnfc(PipelineModel modelVnfc) {
         this.modelVnfc = modelVnfc;
     }
-
-//    public PipelineModel getModelMetric() {
-//        return modelMetric;
-//    }
-//
-//    public void setModelMetric(PipelineModel modelMetric) {
-//        this.modelMetric = modelMetric;
-//    }
 
     public PipelineModel getModelCpu() {
         return modelCpu;

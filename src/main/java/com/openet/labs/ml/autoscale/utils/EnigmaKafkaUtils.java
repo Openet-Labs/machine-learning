@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.openet.labs.ml.autoscale.utils;
 
 import java.io.Serializable;
@@ -28,10 +23,6 @@ import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.apache.spark.streaming.kafka.OffsetRange;
 import scala.Tuple2;
 
-/**
- *
- * @author openet
- */
 public class EnigmaKafkaUtils implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -102,14 +93,14 @@ public class EnigmaKafkaUtils implements Serializable {
         Map<TopicAndPartition, Long> offsets = new HashMap<>();
         offsets.put(topicAndPartition, startOffset);
 
-        JavaInputDStream<String> message = KafkaUtils.createDirectStream(jsc, String.class, String.class, StringDecoder.class, StringDecoder.class, String.class, kafkaParams, offsets, new Function<MessageAndMetadata<String, String>, String>() {
+        JavaInputDStream<String> inputDStream = KafkaUtils.createDirectStream(jsc, String.class, String.class, StringDecoder.class, StringDecoder.class, String.class, kafkaParams, offsets, new Function<MessageAndMetadata<String, String>, String>() {
             public String call(MessageAndMetadata<String, String> v1) throws Exception {
                 return v1.message();
             }
         }
         );
 
-        return message;
+        return inputDStream;
     }
 
 }
