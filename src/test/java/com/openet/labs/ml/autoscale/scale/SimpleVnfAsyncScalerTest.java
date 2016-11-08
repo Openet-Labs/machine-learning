@@ -66,6 +66,7 @@ public class SimpleVnfAsyncScalerTest {
         System.out.println(result.get().getStatusCode());
        // executor.awaitTermination(30, TimeUnit.SECONDS);
        //nc -l -v 1234
+       
     }
     
 }
