@@ -4,6 +4,7 @@ import com.openet.labs.ml.autoscale.json.FlatJsonUnmarshaller;
 import com.openet.labs.ml.autoscale.json.Vnf;
 import com.openet.labs.ml.autoscale.scale.Scaler;
 import com.openet.labs.ml.autoscale.scale.ScalerFactory;
+import com.openet.labs.ml.autoscale.scale.SimpleVnfAsyncScaler;
 import com.openet.labs.ml.autoscale.utils.EnigmaKafkaUtils;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampAddMinutes;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampToDayOfWeek;
@@ -18,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -91,7 +94,7 @@ public class AutoScalingMain implements Serializable {
         AutoScalingOptions arguments = new AutoScalingOptions(args);
         AutoScalingMain instance = new AutoScalingMain();
         instance.setPropertiesPath(arguments.getUseCaseConfFilePath());
-        SparkConf sparkConf = new SparkConf().setAppName("com.openet.enigma.autoscaling").setMaster("local[2]");
+        SparkConf sparkConf = new SparkConf().setAppName("com.openet.enigma.autoscaling").setMaster("local[4]");
         instance.setJavaSparkContext(new JavaSparkContext(sparkConf));
         instance.init();
         instance.train();
@@ -346,10 +349,12 @@ public class AutoScalingMain implements Serializable {
         // get cpu/memory higher than expected
         String queryCpuMemory = "SELECT vnfid FROM dataTable WHERE (cpu > predictedCpu) OR (memory > predictedMemory)";
         finalPredictedDF.registerTempTable("dataTable");
-        DataFrame reactiveScaleUpDF = getSqlContext().sql(queryCpuMemory);
+        DataFrame reactiveScaleUpDF = getSqlContext().sql(queryCpuMemory).distinct();
+        LOGGER.info("reactiveScaleUpDF: " + reactiveScaleUpDF.count());
         // get predictive scale up
         String queryPredictiveScaleUp = "SELECT vnfid FROM dataTable WHERE predictedVnfc > vnfcCount";
-        DataFrame predictiveScaleUpDF = getSqlContext().sql(queryPredictiveScaleUp);
+        DataFrame predictiveScaleUpDF = getSqlContext().sql(queryPredictiveScaleUp).distinct();
+        LOGGER.info("predictiveScaleUpDF: " + predictiveScaleUpDF.count());
 
         DataFrame scaleUpVnfDF = reactiveScaleUpDF.unionAll(predictiveScaleUpDF);
         scaleUpVnfDF = scaleUpVnfDF.select(scaleUpVnfDF.col("vnfid")).distinct();
@@ -359,29 +364,49 @@ public class AutoScalingMain implements Serializable {
         String queryPredictiveScaleDown = "SELECT vnfid FROM dataTable WHERE (vnfcCount > predictedVnfc) EXCEPT (SELECT vnfid FROM scaleUpVnfTable)";
         DataFrame predictiveScaleDownDF = getSqlContext().sql(queryPredictiveScaleDown).distinct();
         predictiveScaleDownDF.registerTempTable("scaleDownVnfTable");
+        LOGGER.info("predictiveScaleDownDF: " + predictiveScaleDownDF.count());
 
-        DataFrame scaleUpDF = predictiveScaleDownDF.join(finalPredictedDF, "vnfid").withColumn("scale_type", lit("up"));
-        List<String> listScaleUp = convertDataFrameToJson(scaleUpDF);
+        //add columns for scaling actions
+        if (scaleUpVnfDF.count() > 0) {
+            LOGGER.info("Scaling Up");
+            try {
+                DataFrame scaleUpDF = scaleUpVnfDF.join(finalPredictedDF, "vnfid").withColumn("scale_type", lit("up"));
+                List<String> listScaleUp = convertDataFrameToJson(scaleUpDF);
+                //        LOGGER.info("listScaleUp: " + listScaleUp);
+                if (listScaleUp.size() > 0) {
+                    List<Future<ResponseEntity<String>>> scalingResponses = doScaling(listScaleUp);
+                    for (Future<ResponseEntity<String>> scalingResponse : scalingResponses) {
+                        LOGGER.info("scaleUp response: " + scalingResponse.get());
+                    }
 
-        DataFrame scaleDownDF = predictiveScaleDownDF.join(finalPredictedDF, "vnfid").withColumn("scale_type", lit("down"));
-        List<String> listScaleDown = convertDataFrameToJson(scaleDownDF);
+                }
+            } catch (Exception e) {
+                LOGGER.info("Error Scaling: " + e.getMessage());
+            }
 
-        try {
-            if (listScaleUp.size() > 0) {
-                List<Future<ResponseEntity<String>>> scalingResponses = doScaling(listScaleUp);
-                for (Future<ResponseEntity<String>> scalingResponse : scalingResponses) {
-                    LOGGER.info("scale: " + scalingResponse.get());
+        } else {
+            LOGGER.info("No Scaling Up");
+        }
+
+        if (predictiveScaleDownDF.count() > 0) {
+            LOGGER.info("Scaling Down");
+            try {
+                DataFrame scaleDownDF = predictiveScaleDownDF.join(finalPredictedDF, "vnfid").withColumn("scale_type", lit("down"));
+                List<String> listScaleDown = convertDataFrameToJson(scaleDownDF);
+//                LOGGER.info("listScaleDown: " + listScaleDown);
+                if (listScaleDown.size() > 0) {
+                    List<Future<ResponseEntity<String>>> scalingResponses = doScaling(listScaleDown);
+                    for (Future<ResponseEntity<String>> scalingResponse : scalingResponses) {
+                        LOGGER.info("scale: " + scalingResponse.get());
+                    }
                 }
 
+            } catch (Exception e) {
+                LOGGER.info("Error Scaling: " + e.getMessage());
             }
-            if (listScaleDown.size() > 0) {
-                List<Future<ResponseEntity<String>>> scalingResponses = doScaling(listScaleDown);
-                for (Future<ResponseEntity<String>> scalingResponse : scalingResponses) {
-                    LOGGER.info("scale: " + scalingResponse.get());
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.info("Error Scaling: " + e.getMessage());
+
+        } else {
+            LOGGER.info("No Scaling Down");
         }
 
     }
@@ -390,15 +415,18 @@ public class AutoScalingMain implements Serializable {
 
         List<Vnf> vnf = FlatJsonUnmarshaller.parseFlatJson(listScale.toString());
 
-        LOGGER.info("vnf: " + vnf.size());
-
         List<Future<ResponseEntity<String>>> scalingResponses = new ArrayList<>();
 
         Scaler scaler = new ScalerFactory().createScaler(vnf.get(0));
 
         for (Vnf vnf1 : vnf) {
-            Future<ResponseEntity<String>> scaleResponse = (Future<ResponseEntity<String>>) scaler.scale(vnf1);
-            scalingResponses.add(scaleResponse);
+            try {
+                Future<ResponseEntity<String>> scaleResponse = (Future<ResponseEntity<String>>) scaler.scale(vnf1);
+                scalingResponses.add(scaleResponse);
+
+            } catch (Exception e) {
+                LOGGER.info("scale: " + e.getMessage());
+            }
 
         }
 
@@ -433,7 +461,6 @@ public class AutoScalingMain implements Serializable {
         setPerTopicKafkaPartitions(getParser().getPerTopicKafkaPartitions(getUseCaseProperties()));
         setZookeeperQuorum(getParser().getKafkaZookeeperQuorum(getUseCaseProperties()));
         setKafkaBroker(getParser().getKafkaBroker(getUseCaseProperties()));
-
         setFutureInterval(getParser().getPredictionInterval(getUseCaseProperties()));
         setStreamDuration(getParser().getStreamingDuration(getUseCaseProperties()));
 

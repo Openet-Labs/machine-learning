@@ -6,6 +6,7 @@
 package com.openet.labs.ml.autoscale;
 
 import com.openet.labs.ml.autoscale.AutoScalingMain;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,8 +91,15 @@ public class AutoScalingMainTest {
     @Test
     public void testStreamingInput() throws Exception {
         System.out.println("testStreamingInput");
+        
+        Properties props = new Properties();
+        // test the .properties file
+        props.load(new FileReader("/home/openet/Projects/autoscaling/application.properties"));
+        
         AutoScalingMain instance = new AutoScalingMain();
+        
         instance.setJavaSparkContext(jsc);
+        instance.setUseCaseProperties(props);
         instance.init();
         instance.train();
         instance.processInputStream();
