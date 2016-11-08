@@ -66,6 +66,7 @@ public class FlatJsonUnmarshaller {
                     vnf.setScaleToFlavorLink(flatVnfc.get(SCALE_TO).asText());
                     JsonNode flavorsNode = flatVnfc.get(FLAVORS);
                     ScaleType scaleType = parseScaleType(flatVnfc.get(SCALE_TYPE).asText());
+                    vnf.setScaleType(scaleType);
 
                     if (flavorsNode.isArray()) {
                         for (JsonNode jsonNode : flavorsNode) {
