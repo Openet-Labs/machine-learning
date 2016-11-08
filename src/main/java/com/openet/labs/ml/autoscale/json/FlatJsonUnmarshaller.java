@@ -26,7 +26,7 @@ public class FlatJsonUnmarshaller {
     private static final String SCALE_TO = "scale_to_flavor";
     private static final String CPU = "cpu";
     private static final String MEMORY = "memory";
-    private static final String METRIC = "metric_current";
+    //private static final String METRIC = "metric_current";
     private static final String PRE_VNFC = "predictedVnfc";
     private static final String PRE_CPU = "predictedVnfc";
     private static final String PRE_MEMORY = "predictedVnfc";
@@ -34,6 +34,12 @@ public class FlatJsonUnmarshaller {
     private static final String UP = "up";
     private static final String DOWN = "down";
 
+    /**
+     * 
+     * @param vnfcs
+     * @return A list of Vnf
+     * @throws IOException 
+     */
     public static List<Vnf> parseFlatJson(final String vnfcs) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(vnfcs);
@@ -102,11 +108,24 @@ public class FlatJsonUnmarshaller {
         return result;
     }
 
+    /**
+     * 
+     * @param list
+     * @param vnfId
+     * @return Vnf
+     * @throws NoSuchElementException 
+     */
     private static Vnf findVnfById(List<Vnf> list, String vnfId) throws NoSuchElementException {
         Optional<Vnf> findFirst = list.stream().filter((vnf) -> (Objects.equal(vnf.getId(), vnfId))).findFirst();
         return findFirst.get();
     }
 
+    /**
+     * 
+     * @param list
+     * @param vduId
+     * @return Vdu
+     */
     private static Vdu findVduById(List<Vdu> list, String vduId) {
         Optional<Vdu> findFirst = list.stream().filter((vdu) -> (Objects.equal(vdu.getId(), vduId))).findFirst();
         return findFirst.get();
