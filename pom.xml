@@ -123,12 +123,13 @@
             <version>${powermock.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- we dont need this
         <dependency>
             <artifactId>guava</artifactId>
             <groupId>com.google.guava</groupId>
             <type>jar</type>
             <version>15.0</version>
-        </dependency>
+        </dependency>-->
     </dependencies>
     <build>
         <pluginManagement>

@@ -2,12 +2,12 @@ package com.openet.labs.ml.autoscale.json;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Objects;
 import com.openet.labs.ml.autoscale.scale.ScaleType;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,7 +117,7 @@ public class FlatJsonUnmarshaller {
      * @throws NoSuchElementException 
      */
     private static Vnf findVnfById(List<Vnf> list, String vnfId) throws NoSuchElementException {
-        Optional<Vnf> findFirst = list.stream().filter((vnf) -> (Objects.equal(vnf.getId(), vnfId))).findFirst();
+        Optional<Vnf> findFirst = list.stream().filter((vnf) -> (Objects.equals(vnf.getId(), vnfId))).findFirst();
         return findFirst.get();
     }
 
@@ -128,7 +128,7 @@ public class FlatJsonUnmarshaller {
      * @return Vdu
      */
     private static Vdu findVduById(List<Vdu> list, String vduId) {
-        Optional<Vdu> findFirst = list.stream().filter((vdu) -> (Objects.equal(vdu.getId(), vduId))).findFirst();
+        Optional<Vdu> findFirst = list.stream().filter((vdu) -> (Objects.equals(vdu.getId(), vduId))).findFirst();
         return findFirst.get();
     }
 
