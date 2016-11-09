@@ -16,6 +16,16 @@ We use [Maven](https://maven.apache.org/) for building Java
     ./deploy.sh
 
 ### Setup
+
+#### Configuration
+    We use kafka topics as input for this use case:
+    * Traning input: kafka.topic=com.openet.autoscaling
+    * Real time input: kafka.topic.train=com.openet.autoscaling.train
+    This can be set in the properties file
+
+#### Training data
+    To generate training data follow [generate training](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/training-data-generator)
+    
     
 ### Running
     bin/runAutoScaling.sh
