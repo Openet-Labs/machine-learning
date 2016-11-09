@@ -19,10 +19,16 @@ We use [Maven](https://maven.apache.org/) for building Java
 
 #### Configuration
 We use `autoscale.properties` file for use case configuration which can found in the `bin` folder.
+Kafka topics are used as input for this use case, Kafka related configuration, some default values have been configured
+* kafka.topic - real time input
+* kafka.topic.train - training input topic
+* kafka.host - hostname of the machine that is running the kafka service
+* kafka.consumer.group
+* kafka.perTopicKafkaPartitions
+* kafka.zk.quorum
+* kafka.broker
 
-* Traning input: kafka.topic=com.openet.autoscaling
-* Real time input: kafka.topic.train=com.openet.autoscaling.train
-This can be set in the properties file
+
 
 #### Training data
 To generate training data follow [generate training](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/training-data-generator)
