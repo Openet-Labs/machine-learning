@@ -2,7 +2,7 @@
 
 ENIGMA_USECASES_HOME=/home/openet/Projects/autoscaling
 ENIGMA_SPARK_HOME=/home/openet/enigma/spark/spark-1.6.1-bin-hadoop2.6
-USECASE_PROPERTIES=${ENIGMA_USECASES_HOME}/autoscale.properties
+USECASE_PROPERTIES=${ENIGMA_USECASES_HOME}/application.properties
 
 getTag()
 {
@@ -43,4 +43,4 @@ function sparkSubmit()
 
 sparkSubmit com.openet.labs.ml.autoscale.AutoScalingMain \
 ${ENIGMA_USECASES_HOME}/machine-learning-0.1-SNAPSHOT.jar \
---usecase-properties ${ENIGMA_USECASES_HOME}/autoscale.properties \
+--usecase-properties ${ENIGMA_USECASES_HOME}/application.properties \
