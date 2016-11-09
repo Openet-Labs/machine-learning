@@ -39,7 +39,7 @@ public class TrainingData {
             AppProperties app = new AppProperties();
             kafkaBroker = app.getProperty("kafka.broker");
             kafkaGroupId = app.getProperty("kafka.group.id");
-            kafkaTrainTopic = app.getProperty("kafka.topic");
+            kafkaTrainTopic = app.getProperty("kafka.topic.train");
         } catch (IOException ex) {
             Logger.getLogger(TrainingData.class.getName()).log(Level.SEVERE, null, ex);
         }
