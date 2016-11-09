@@ -28,6 +28,9 @@ Kafka topics are used as input for this use case, Kafka related configuration, s
 * kafka.zk.quorum
 * kafka.broker
 
+Apache Spark related
+* spark.streaming.duration
+
 
 
 #### Training data
