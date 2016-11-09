@@ -137,7 +137,7 @@ public class FlatJsonUnmarshaller {
             case UP:
                 return new ScaleType(ScaleType.Type.UP);
             case DOWN:
-                return new ScaleType(ScaleType.Type.DOWN);
+                return new ScaleType(ScaleType.Type.UP);
             default:
                 throw new IllegalArgumentException("Can not parse scale type: " + value);
         }

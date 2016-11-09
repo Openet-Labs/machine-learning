@@ -60,7 +60,7 @@ public class SimpleVnfAsyncScaler extends Scaler {
 
     private HttpMethod getScaleHttpMethod(ScaleType type) {
         //TODO: some logic to choose the http method. GET/POST/...
-        return HttpMethod.POST;
+        return HttpMethod.GET;
     }
 
     
