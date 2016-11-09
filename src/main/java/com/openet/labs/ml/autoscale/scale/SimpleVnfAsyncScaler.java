@@ -26,8 +26,7 @@ public class SimpleVnfAsyncScaler extends Scaler {
 
     @Override
     public Future<ResponseEntity<String>> scale(Scalable scalable) {                
-        Vnf vnf = (Vnf) scalable;
-        
+        Vnf vnf = (Vnf) scalable;        
         log.debug("Scaling VNF " + vnf.getId());
         
         ScaleType type = vnf.getScaleType(); // by right should call calculateScaleType method
