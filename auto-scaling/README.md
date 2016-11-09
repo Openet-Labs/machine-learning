@@ -18,7 +18,8 @@ We use [Maven](https://maven.apache.org/) for building Java
 ### Setup
 
 #### Configuration
-We use kafka topics as input for this use case:
+We use autoscale.properties for use case configuration which can found in the `bin` folder.
+
 * Traning input: kafka.topic=com.openet.autoscaling
 * Real time input: kafka.topic.train=com.openet.autoscaling.train
 This can be set in the properties file
