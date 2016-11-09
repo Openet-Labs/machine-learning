@@ -1,6 +1,9 @@
 package com.openet.labs.ml.traindatagenerator;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -13,31 +16,40 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import javax.xml.transform.stream.StreamSource;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 import org.json.JSONObject;
 
-/**
- *
- * @author ehsun7b
- */
 public class TrainingData {
 
     private static final String MODEL_RES = "model.csv";
 
-    private static String KAFKA_TRAIN_TOPIC = "com.openet.autoscaling.test";
-    private static String KAFKA_BROKER = "10.3.18.38:9092";
-    private static String KAFKA_GROUP_ID = "enigma";
+    private static String kafkaTrainTopic = "com.openet.autoscaling.test";
+    private static String kafkaBroker = "10.3.18.38:9092";
+    private static String kafkaGroupId = "enigma";
 
     private static Producer<Integer, String> producer;
 
     public static void main(String[] args) {
         List<String> metrics = new LinkedList<>();
 
-        try (Stream<String> lines = Files.lines(Paths.get(Thread.currentThread().getContextClassLoader().getResource(MODEL_RES).toURI()))) {
-            lines.map(line -> line.toString().split(",")[2]).forEach(metrics::add);
-        } catch (IOException | URISyntaxException ex) {
+        try {
+            AppProperties app = new AppProperties();
+            kafkaBroker = app.getProperty("kafka.broker");
+            kafkaGroupId = app.getProperty("kafka.group.id");
+            kafkaTrainTopic = app.getProperty("kafka.topic");
+        } catch (IOException ex) {
+            Logger.getLogger(TrainingData.class.getName()).log(Level.SEVERE, null, ex);
+        }
+                
+        
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Thread.currentThread().getContextClassLoader().getResourceAsStream(MODEL_RES)))) {
+            for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                metrics.add(line);
+            }
+        } catch (IOException ex) {
             Logger.getLogger(TrainingData.class.getName()).log(Level.SEVERE, null, ex);
         }
 
@@ -93,7 +105,7 @@ public class TrainingData {
     private static void writeToKafkaTopic(JSONObject json) {
         System.out.println(json.toString());
         try {
-            producer.send(new KeyedMessage<>(KAFKA_TRAIN_TOPIC, json.toString()));
+            producer.send(new KeyedMessage<>(kafkaTrainTopic, json.toString()));
         } catch (kafka.common.FailedToSendMessageException ex) {
             Logger.getLogger(TrainingData.class.getName()).log(Level.SEVERE, "Publishing to Kafka topic failed!", ex);
         }
@@ -102,8 +114,8 @@ public class TrainingData {
     private static Producer<Integer, String> createProducer() {
         Properties properties = new Properties();
         properties.put("serializer.class", "kafka.serializer.StringEncoder");
-        properties.put("metadata.broker.list", KAFKA_BROKER);
-        properties.put("group.id", KAFKA_GROUP_ID);
+        properties.put("metadata.broker.list", kafkaBroker);
+        properties.put("group.id", kafkaGroupId);
 
         Producer<Integer, String> result = new Producer<>(new ProducerConfig(properties));
         return result;
