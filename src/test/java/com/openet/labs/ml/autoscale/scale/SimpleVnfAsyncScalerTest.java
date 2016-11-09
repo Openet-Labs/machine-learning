@@ -57,7 +57,7 @@ public class SimpleVnfAsyncScalerTest {
         vnf.setScaleDownLink("http://localhost:1234/scaledown");
         vnf.setScaleUpLink("http://localhost:1234/scaleup");
         vnf.setScaleToFlavorLink("http://localhost:1234/scale");
-        vnf.setScaleType(new ScaleType(ScaleType.Type.UP));
+        vnf.setScaleType(new ScaleType(ScaleType.Type.DOWN));
         
         SimpleVnfAsyncScaler instance = new SimpleVnfAsyncScaler();
         ExecutorService executor = Executors.newCachedThreadPool();
