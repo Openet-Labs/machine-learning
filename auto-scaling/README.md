@@ -1,4 +1,4 @@
-# [Scaler] Auto Scaling Use Case
+#Auto Scaling Use Case
 
 Supports scaling based on the following: 
 * Cpu Utilization %
@@ -9,3 +9,7 @@ Using this Repo
 ------------------
 ### Building
 We use [Maven](https://maven.apache.org/) for building Java
+
+    mvn package
+
+    git clone https://github.com/Openet-Labs/machine-learning.git
