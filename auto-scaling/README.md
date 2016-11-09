@@ -19,7 +19,9 @@ We use [Maven](https://maven.apache.org/) for building Java
 
 #### Configuration
 We use `autoscale.properties` file for use case configuration which can found in the `bin` folder.
-Kafka topics are used as input for this use case, Kafka related configuration, some default values have been configured
+Kafka topics are used as input for this use case, some default values have already been configured
+
+Kafka related
 * kafka.topic - real time input
 * kafka.topic.train - training input topic
 * kafka.host - hostname of the machine that is running the kafka service
