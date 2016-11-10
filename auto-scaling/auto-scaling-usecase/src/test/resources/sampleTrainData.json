@@ -1,0 +1,170 @@
+[
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445097660000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445097720000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445097780000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445097840000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445097900000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445097960000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098020000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098080000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098140000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098200000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098260000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098320000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098380000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098440000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098500000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098560000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098620000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098680000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098740000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098800000"
+ },
+ {
+  "Vnfcs" : 4,
+  "Vdu" : "request_logger_437",
+  "Memory" : 50.01,
+  "Cpu" : 50.01,
+  "Metric" : 392.89,
+  "Timestamp" : "1445098860000"
+ }
+]

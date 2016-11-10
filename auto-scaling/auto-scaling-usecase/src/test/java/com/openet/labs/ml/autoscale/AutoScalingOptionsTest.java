@@ -17,26 +17,7 @@ import org.kohsuke.args4j.CmdLineException;
  *
  * @author openet
  */
-public class AutoScalingOptionsTest {
-    
-    public AutoScalingOptionsTest() {
-    }
-    
-    @BeforeClass
-    public static void setUpClass() {
-    }
-    
-    @AfterClass
-    public static void tearDownClass() {
-    }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
+public class AutoScalingOptionsTest {   
 
     @Test
     public void testSomeMethod() throws CmdLineException {

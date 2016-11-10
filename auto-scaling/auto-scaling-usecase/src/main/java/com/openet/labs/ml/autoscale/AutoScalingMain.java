@@ -4,7 +4,6 @@ import com.openet.labs.ml.autoscale.json.FlatJsonUnmarshaller;
 import com.openet.labs.ml.autoscale.json.Vnf;
 import com.openet.labs.ml.autoscale.scale.Scaler;
 import com.openet.labs.ml.autoscale.scale.ScalerFactory;
-import com.openet.labs.ml.autoscale.scale.SimpleVnfAsyncScaler;
 import com.openet.labs.ml.autoscale.utils.EnigmaKafkaUtils;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampAddMinutes;
 import com.openet.labs.ml.autoscale.utils.UdfTimestampToDayOfWeek;
@@ -19,13 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.RollingFileAppender;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -79,10 +73,9 @@ public class AutoScalingMain implements Serializable {
     private String kafkaBroker;
 
     //Spark
-    private transient JavaSparkContext jsc;
-    private transient JavaStreamingContext javaStreamingContext;
-    private transient SQLContext sqlContext;
-    private Map<String, PipelineModel> pipelineModelMap;
+    private JavaSparkContext jsc;
+    private JavaStreamingContext javaStreamingContext;
+    private SQLContext sqlContext;    
     private Map<String, ItemVdu> vduItemsMap;
 
     //Params
@@ -96,8 +89,21 @@ public class AutoScalingMain implements Serializable {
         instance.setPropertiesPath(arguments.getUseCaseConfFilePath());
         SparkConf sparkConf = new SparkConf().setAppName("com.openet.enigma.autoscaling").setMaster("local[4]");
         instance.setJavaSparkContext(new JavaSparkContext(sparkConf));
+        
+        // init helper functions and variables
         instance.init();
-        instance.train();
+        
+        // train models
+        JavaRDD<String> trainDataRDD = instance.getJavaSparkContext().emptyRDD();
+        trainDataRDD = instance.getTrainingData();
+
+        if (trainDataRDD.isEmpty() || trainDataRDD.count() == 0) {
+
+            LOGGER.info("No Training records found: exiting!!!");
+            return;
+        }
+        instance.train(trainDataRDD);
+        // process streaming data
         instance.processInputStream();
         instance.getJavaStreamingContext().start();
         instance.getJavaStreamingContext().awaitTermination();
@@ -108,7 +114,6 @@ public class AutoScalingMain implements Serializable {
     public void init() throws IOException {
 
         LOGGER.info("Start init");
-        enableFileLog();
         setParser(new PropertiesParser());
         setEnigmaKafkaUtils(new EnigmaKafkaUtils());
         setPropertyValues();
@@ -118,26 +123,15 @@ public class AutoScalingMain implements Serializable {
             setSqlContext(new SQLContext(getJavaSparkContext()));
             registerUdfs(getSqlContext());
             setJavaStreamingContext(new JavaStreamingContext(jsc, Durations.milliseconds(getStreamDuration())));
-        }
-        setPipelineModelMap(new HashMap<>());
+        }        
         setVduItemsMap(new HashMap<>());
 
         LOGGER.info("Complete init");
     }
 
-    public void train() {
+    public void train(JavaRDD<String> trainDataRDD) {
 
         LOGGER.info("Start Training");
-
-        JavaRDD<String> trainDataRDD = getJavaSparkContext().emptyRDD();
-
-        trainDataRDD = getTrainingData();
-
-        if (trainDataRDD.isEmpty() || trainDataRDD.count() == 0) {
-
-            LOGGER.info("No Training records found: exiting!!!");
-            return;
-        }
 
         LOGGER.info("trainDataRDD records: " + trainDataRDD.count());
         // Convert RDD string JSON into dataframe
@@ -175,7 +169,7 @@ public class AutoScalingMain implements Serializable {
             getVduItemsMap().put(vduId, vdu);
         }
 
-        LOGGER.info("train():: Current model in pipelineModelMap:: " + getVduItemsMap().keySet().toString());
+        LOGGER.info("train():: Current model in getVduItemsMap:: " + getVduItemsMap().keySet().toString());
         LOGGER.info("Complete Training");
 
     }
@@ -466,18 +460,6 @@ public class AutoScalingMain implements Serializable {
 
     }
 
-    private void enableFileLog() {
-
-        LOGGER.setLevel(Level.DEBUG);
-        RollingFileAppender rfa = new RollingFileAppender();
-        rfa.setFile("/tmp/AutoScaling.log");
-        rfa.setMaxFileSize("50MB");
-        rfa.setLayout(new PatternLayout("%d - [%p] - %m%n"));
-        rfa.setAppend(false);
-        rfa.activateOptions();
-        LOGGER.addAppender(rfa);
-    }
-
     public synchronized void close() throws IOException {
         if (null != getJavaStreamingContext()) {
             getJavaStreamingContext().stop();
@@ -517,14 +499,6 @@ public class AutoScalingMain implements Serializable {
 
     public void setJavaStreamingContext(JavaStreamingContext javaStreamingContext) {
         this.javaStreamingContext = javaStreamingContext;
-    }
-
-    public Map<String, PipelineModel> getPipelineModelMap() {
-        return pipelineModelMap;
-    }
-
-    public void setPipelineModelMap(Map<String, PipelineModel> pipelineModelMap) {
-        this.pipelineModelMap = pipelineModelMap;
     }
 
     public SQLContext getSqlContext() {
