@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
+ENIGMA_USECASES_HOME=/home/openet/Projects/autoscaling
 ENIGMA_SPARK_HOME=/home/openet/enigma/spark/spark-1.6.1-bin-hadoop2.6
+USECASE_PROPERTIES=${ENIGMA_USECASES_HOME}/application.properties
 
 getTag()
 {
@@ -14,8 +16,6 @@ function sparkSubmit()
 
     CLASS=${1}
     APPJAR=${2}
-
-    shift 2
     
     MASTER=local[2]    
     NUMBER_OF_CORES=4    
@@ -41,10 +41,6 @@ function sparkSubmit()
  "$@"
 }
 
-
-
-CLASSPATH=com.openet.labs.ml.autoscale.AutoScalingMain
-JAR=auto-scaling-usecase-1.0-SNAPSHOT.jar
-USECASE_PROPERTIES=autoscale.properties
-
-sparkSubmit ${CLASSPATH} ${JAR} --usecase-properties ${USECASE_PROPERTIES}
+sparkSubmit com.openet.labs.ml.autoscale.AutoScalingMain \
+${ENIGMA_USECASES_HOME}/machine-learning-0.1-SNAPSHOT.jar \
+--usecase-properties ${ENIGMA_USECASES_HOME}/application.properties \

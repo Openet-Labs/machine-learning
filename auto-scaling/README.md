@@ -7,7 +7,7 @@ Supports scaling based on the following:
 
 Using this Repo
 ------------------
-### Building
+## Building
 We use [Maven](https://maven.apache.org/) for building Java
     
     git clone https://github.com/Openet-Labs/machine-learning.git
@@ -15,9 +15,9 @@ We use [Maven](https://maven.apache.org/) for building Java
     mvn -DskipTests clean package
     ./deploy.sh
 
-### Setup
+## Setup
 
-#### Configuration
+### Configuration
 We use `autoscale.properties` file for use case configuration which can found in the `bin` folder.
 Kafka topics are used as input for this use case, some default values have already been configured
 
@@ -35,10 +35,10 @@ Apache Spark related
 
 
 
-#### Training data
+### Training data
 To generate training data follow [generate training](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/training-data-generator)
     
     
-### Running
+## Running
     bin/runAutoScaling.sh
     
