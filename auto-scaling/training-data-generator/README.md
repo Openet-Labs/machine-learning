@@ -17,7 +17,7 @@ cp ../application.properties .
 
 Edit the values in the `application.properties` file based on your [**Apache Kafka**](https://kafka.apache.org/) broker. The key names are self-descriptive:
 
-* **1**
-* **2**
-
+* **kafka.broker**: The hostname/IP address and the port number of the broker 
+* **kafka.topic.train**: The kafka topic from which the [Use case](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling) reads the training data. *You do **not** to change it unless you have changed the same key in the use case properties file.*
+* **kafka.group.id**: The kafka consumer group id of the [Use case](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling). *You do **not** to change it unless you have changed the same key in the use case properties file.*
 
