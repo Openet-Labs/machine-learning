@@ -44,7 +44,7 @@
                                 </transformer>
                             </transformers>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedClassifierName>launcher</shadedClassifierName>
+                            <shadedClassifierName>executable</shadedClassifierName>
                         </configuration>
                     </execution>
                 </executions>
