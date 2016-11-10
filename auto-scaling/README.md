@@ -48,8 +48,9 @@ example:
 
     SPARK_HOME=/home/openet/enigma/spark/spark-1.6.1-bin-hadoop2.6
 
-To run:
+To Start the Use Case:
 
     cd bin
     ./runAutoScaling.sh
     
+To Test: insert the real time input into the kafka topic in the [correct format](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/auto-scaling-usecase/etc/sample_input.json)
