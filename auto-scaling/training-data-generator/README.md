@@ -9,15 +9,15 @@ cd [directory-that-you-cloned-in]/machine-learning/auto-scaling/training-data-ge
 ls training-data-generator-1.0-SNAPSHOT-executable.jar
 ```
 
-You should see the file in the `ls` command output, otherwise you should build the project again.
+You should see the *executable jar* file in the `ls` command output, otherwise you should build the project again.
 
 ```
 cp ../application.properties .
 ```
 
 Edit the values in the `application.properties` file based on your [**Apache Kafka**](https://kafka.apache.org/) broker. The key names are self-descriptive:
-**
-* 1
-* 2
-**
+
+* **1**
+* **2**
+
 
