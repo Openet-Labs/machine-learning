@@ -31,8 +31,10 @@ Kafka related
 * kafka.broker
 
 Apache Spark related
-* spark.streaming.duration
+* spark.streaming.duration - the frequency in milliseconds the real time input kafka topic is queried
 
+Use Case specific
+* autoscaling.future.interval - the duration in minutes in the future for vnfc prediction
 
 
 ### Training data
@@ -40,5 +42,6 @@ To generate training data follow [generate training](https://github.com/Openet-L
     
     
 ## Running
-    bin/runAutoScaling.sh
+    cd bin
+    ./runAutoScaling.sh
     

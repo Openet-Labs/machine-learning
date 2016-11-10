@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-ENIGMA_SPARK_HOME=/home/openet/enigma/spark/spark-1.6.1-bin-hadoop2.6
-
 getTag()
 {
     grep "^$1=" $2 | awk -F= '{ print $2 }'
@@ -9,8 +7,7 @@ getTag()
 
 function sparkSubmit()
 {    
-    APPNAME="com.openet.enigma.autoscaling"
-    LOG4J_PROPERTIES_PATH=${ENIGMA_USECASES_HOME}/log4j.properties
+    APPNAME="com.openet.enigma.autoscaling"    
 
     CLASS=${1}
     APPJAR=${2}
@@ -25,7 +22,7 @@ function sparkSubmit()
     DURATION=5000
     
 
- ${ENIGMA_SPARK_HOME}/bin/spark-submit \
+ ${SPARK_HOME}/bin/spark-submit \
  --class ${CLASS} \
  --master ${MASTER} \
  --executor-cores ${NUMBER_OF_CORES} \
@@ -34,14 +31,15 @@ function sparkSubmit()
  --driver-memory ${DRIVER_MEMORY} \
  --conf spark.appName=${APPNAME} \
  --conf spark.duration=${DURATION} \
- --driver-java-options "-Dlog4j.configuration=file:${LOG4J_PROPERTIES_PATH} -DENIGMA_HOME=${ENIGMA_HOME} -DAPPNAME=${APPNAME}" \
- --conf "spark.executor.extraJavaOptions=-Dlog4j.configuration=file:${LOG4J_PROPERTIES_PATH} -DENIGMA_HOME=${ENIGMA_HOME} -DAPPNAME=${APPNAME}" \
- --conf "spark.driver.extraJavaOptions=-Dlog4j.configuration=file:${LOG4J_PROPERTIES_PATH} -DENIGMA_HOME=${ENIGMA_HOME} -DAPPNAME=${APPNAME}" \
+ --driver-java-options "-Dlog4j.configuration=file:${LOG4J_PROPERTIES_PATH} -DAPPNAME=${APPNAME}" \
+ --conf "spark.executor.extraJavaOptions=-Dlog4j.configuration=file:${LOG4J_PROPERTIES_PATH} -DAPPNAME=${APPNAME}" \
+ --conf "spark.driver.extraJavaOptions=-Dlog4j.configuration=file:${LOG4J_PROPERTIES_PATH} -DAPPNAME=${APPNAME}" \
  ${APPJAR} \
  "$@"
 }
 
-
+SPARK_HOME=/home/openet/enigma/spark/spark-1.6.1-bin-hadoop2.6
+LOG4J_PROPERTIES_PATH=log4j.properties
 
 CLASSPATH=com.openet.labs.ml.autoscale.AutoScalingMain
 JAR=auto-scaling-usecase-1.0-SNAPSHOT.jar
