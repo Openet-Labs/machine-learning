@@ -1,6 +1,7 @@
 #Auto Scaling Use Case
+This use case showcases rective and predictive scaling of VNFs. We use [Apache Spark](http://spark.apache.org/) as our engine.
 
-Supports scaling based on the following: 
+It supports scaling based on the following:
 * Cpu Utilization %
 * Memory Utilization %
 * Vnfcs
@@ -53,4 +54,4 @@ To Start the Use Case:
     cd bin
     ./runAutoScaling.sh
     
-To Test: insert the real time input into the kafka topic in the [correct format](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/auto-scaling-usecase/etc/sample_input.json)
+To Test insert the real time input into the kafka topic in the [correct format](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/auto-scaling-usecase/etc/sample_input.json)
