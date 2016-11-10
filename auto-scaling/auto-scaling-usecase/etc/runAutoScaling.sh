@@ -39,6 +39,7 @@ function sparkSubmit()
 }
 
 SPARK_HOME=/home/openet/enigma/spark/spark-1.6.1-bin-hadoop2.6
+
 LOG4J_PROPERTIES_PATH=log4j.properties
 
 CLASSPATH=com.openet.labs.ml.autoscale.AutoScalingMain

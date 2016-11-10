@@ -43,6 +43,11 @@ To generate training data follow [generate training](https://github.com/Openet-L
     
     
 ## Running
+Edit the `runAutoScaling.sh` file which can be found in the bin folder and set `SPARK_HOME` to the path of your local Apache Spark installation:
+example:
+    SPARK_HOME=/home/openet/enigma/spark/spark-1.6.1-bin-hadoop2.6
+
+To run:
     cd bin
     ./runAutoScaling.sh
     
