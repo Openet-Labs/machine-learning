@@ -27,3 +27,19 @@ java -jar training-data-generator-1.0-SNAPSHOT-executable.jar
 ```
 
 _*You can verify if the training records have been published into the topic by means of [Kafka console consumer](https://kafka.apache.org/documentation#quickstart).*_
+
+### Custom training data
+If you want to train the use case with your own training data you should publish the data into the same Kafka topic. The data format should be as the following example for each record:
+~~~JSON
+{
+    "Vdu": "webcache",
+    "Vnfcs": 3,
+    "Cpu": 50.0,
+    "Mempry": 50.0,
+    "Timestamp": 1478762317 
+}
+~~~
+
+* Vdu: ID of the 
+* Vnfcs: Count of Vnfcs of that Vdu
+*
