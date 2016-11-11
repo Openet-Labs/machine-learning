@@ -52,7 +52,8 @@ To generate sample training data follow [Training Data Generator](https://github
     
     
 ## Running
-Edit the `runAutoScaling.sh` file which can be found in the bin folder and set `SPARK_HOME` to the path of your local Apache Spark installation,
+###Start the use case
+Edit the `runAutoScaling.sh` file which can be found in the bin folder and set `SPARK_HOME` to reflect the path of your local Apache Spark installation,
 example:
 
     SPARK_HOME=/home/openet/enigma/spark/spark-1.6.1-bin-hadoop2.6
@@ -61,5 +62,11 @@ To Start the Use Case:
 
     cd bin
     ./runAutoScaling.sh
+
+### Testing the use case
+Start the provided netcat script in another terminal to receive scaling rest calls from the use case
     
-To Test insert the real time input into the kafka topic in the [correct format](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/auto-scaling-usecase/etc/sample_input.json)
+    ./startNetcatRestListerner.sh
+
+Start the kafka producer to insert 
+real time input into the kafka topic in the [correct format](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/auto-scaling-usecase/etc/sample_input.json)
