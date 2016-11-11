@@ -29,9 +29,27 @@ Running`deploy.sh` will create a `bin` folder with all the required files for ru
 
 ## Setup
 
+### Apache Kafka
+Kafka topics are used as input for this use case, ensure that you have Kafka service installed and running. 
+You can either: 
+    *** install Kafka as standalone, refer to [Kafka Quickstart](https://kafka.apache.org/quickstart)
+    *** install Enigma which comes with kafka pre-installed [Vagrant Enigma](https://github.com/Openet-Labs/vagrant-enigma) 
+
+Continue to create the required topics:
+
+    cd [kafka_installed_path]
+
+To create kafka input topic - com.openet.autoscaling
+    ** bin/kafka-topics.sh --create --topic com.openet.autoscaling --zookeeper localhost:2181 --replication-factor 1 --partitions 1
+To create kafka training topic - com.openet.autoscaling.train
+    ** bin/kafka-topics.sh --create --topic com.openet.autoscaling.train --zookeeper localhost:2181 --replication-factor 1 --partitions 1
+
+*Note that some parameters could be different depending on your environment*
+
+
 ### Configuration
 We use `autoscale.properties` file for use case configuration which can found in the `bin` folder.
-Kafka topics are used as input for this use case, some default values have already been configured
+
 
 Kafka related
 * kafka.topic - real time input
