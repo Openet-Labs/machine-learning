@@ -2,9 +2,9 @@
 This use case showcases rective and predictive scaling of VNFs. We use [Apache Spark](http://spark.apache.org/) as our engine.
 
 It supports scaling based on the following:
-* Cpu Utilization %
-* Memory Utilization %
-* Vnfcs
+1. CPU Utilization %
+2. Memory Utilization %
+3. Vnfc count
 
 Using this Repo
 ------------------
@@ -16,6 +16,12 @@ We use [Maven](https://maven.apache.org/) for building Java
     mvn -DskipTests clean package
     cd ..
     ./deploy.sh
+
+Running`deploy.sh` will create a `bin` folder with all the required files for running the use case:
+* auto-scaling-usecase-1.0-SNAPSHOT.jar - the use case jar file
+* autoscale.properties - the properties file used for configuring the use case
+* log4j.properties - the properties file used for configuring logging options
+* runAutoScaling.sh - the script used to run the use case
 
 ## Setup
 
