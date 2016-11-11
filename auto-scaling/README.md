@@ -99,7 +99,7 @@ After than run the script as below.
 
     ./sendTestInput.sh
 
-Once the use case has completed processing the netcat script above would reflect the scaling called issued by the use case
+Once the use case has completed processing the netcat script above would reflect the scaling rest call issued by the use case.
 
 ### Input format
 Real time input into the kafka topic should be in the [correct format](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/auto-scaling-usecase/etc/sample_input.json)
