@@ -4,14 +4,13 @@ import com.openet.labs.ml.autoscale.json.Vnf;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
 public class SimpleVnfAsyncScaler extends Scaler {
     
-    private static final Logger log = LoggerFactory.getLogger(SimpleVnfAsyncScaler.class);
+    private static final Logger log = Logger.getLogger(SimpleVnfAsyncScaler.class);
         
     protected ExecutorService executor;
 
