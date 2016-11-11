@@ -24,6 +24,8 @@ Running`deploy.sh` will create a `bin` folder with all the required files for ru
 * runAutoScaling.sh - the script used to run the use case
 * training-data-generator-1.0-SNAPSHOT-executable.jar - the sample training data generation jar
 * application.properties - the properties file for the training data generation
+* sample_input.json - contains sample json input we will use for testing
+* sendTestInput.sh - sends the sample_input.json to the input kafka topic
 
 ## Setup
 
@@ -68,5 +70,13 @@ Start the provided netcat script in another terminal to receive scaling rest cal
     
     ./startNetcatRestListerner.sh
 
-Start the kafka producer to insert 
-real time input into the kafka topic in the [correct format](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/auto-scaling-usecase/etc/sample_input.json)
+Edit the script to set the variables `KAFKA_PATH` to your local kafka installation path and `KAFKA_TOPIC_INPUT` to your respective input topic.
+After than run the script as below.
+
+    ./sendTestInput.sh
+
+Once the use case has completed processing the netcat script above would reflect the scaling called issued by the use case
+
+### Input format
+Real time input into the kafka topic should be in the [correct format](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/auto-scaling-usecase/etc/sample_input.json)
+
