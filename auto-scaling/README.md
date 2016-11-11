@@ -1,5 +1,8 @@
 #Auto Scaling Use Case
-This use case showcases rective and predictive scaling of VNFs. We use [Apache Spark](http://spark.apache.org/) as our engine.
+This use case showcases Reactive Auto Scaling of VNFs which is based on current input values and 
+Predictive Auto Scaling of VNFs which is scaling based on predicted values. [Auto Scaling](https://en.wikipedia.org/wiki/Autoscaling) 
+
+We use [Apache Spark](http://spark.apache.org/) as our engine.
 
 It supports scaling based on the following:
 * CPU Utilization %
