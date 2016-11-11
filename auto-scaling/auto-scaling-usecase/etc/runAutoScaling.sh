@@ -46,4 +46,4 @@ CLASSPATH=com.openet.labs.ml.autoscale.AutoScalingMain
 JAR=auto-scaling-usecase-1.0-SNAPSHOT.jar
 USECASE_PROPERTIES=autoscale.properties
 
-sparkSubmit ${CLASSPATH} ${JAR} --usecase-properties ${USECASE_PROPERTIES}
+sparkSubmit ${CLASSPATH} ${JAR} --usecase-properties ${USECASE_PROPERTIES} &
