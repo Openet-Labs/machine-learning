@@ -40,9 +40,9 @@ Continue to create the required topics:
     cd [kafka_installed_path]
 
 To create kafka input topic - com.openet.autoscaling
-    ** bin/kafka-topics.sh --create --topic com.openet.autoscaling --zookeeper localhost:2181 --replication-factor 1 --partitions 1
+    bin/kafka-topics.sh --create --topic com.openet.autoscaling --zookeeper localhost:2181 --replication-factor 1 --partitions 1
 To create kafka training topic - com.openet.autoscaling.train
-    ** bin/kafka-topics.sh --create --topic com.openet.autoscaling.train --zookeeper localhost:2181 --replication-factor 1 --partitions 1
+    bin/kafka-topics.sh --create --topic com.openet.autoscaling.train --zookeeper localhost:2181 --replication-factor 1 --partitions 1
 
 *Note that some parameters could be different depending on your environment*
 
