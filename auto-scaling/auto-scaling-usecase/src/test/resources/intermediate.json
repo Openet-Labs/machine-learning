@@ -13,7 +13,8 @@
  "memory" : 4560000,
  "predictedVnfc" : 5.0,
  "predictedCpu" : 50.01000000000013,
- "predictedMemory" : 50.01000000000013
+ "predictedMemory" : 50.01000000000013,
+ "scale_type" : "down"
 },
 {
  "vduid" : "squid_347",
@@ -29,7 +30,8 @@
  "memory" : 4560000,
  "predictedVnfc" : 5.0,
  "predictedCpu" : 50.01000000000013,
- "predictedMemory" : 50.01000000000013
+ "predictedMemory" : 50.01000000000013,
+ "scale_type" : "down"
 },
 {
  "vduid" : "squid_347",
@@ -45,7 +47,8 @@
  "memory" : 4560000,
  "predictedVnfc" : 5.0,
  "predictedCpu" : 50.01000000000013,
- "predictedMemory" : 50.01000000000013
+ "predictedMemory" : 50.01000000000013,
+ "scale_type" : "down"
 },
 {
  "vduid" : "squid_347",
@@ -61,6 +64,7 @@
  "memory" : 4560000,
  "predictedVnfc" : 5.0,
  "predictedCpu" : 50.01000000000013,
- "predictedMemory" : 50.01000000000013
+ "predictedMemory" : 50.01000000000013,
+ "scale_type" : "down"
 }
 ]
