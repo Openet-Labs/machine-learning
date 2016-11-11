@@ -33,8 +33,8 @@ Running`deploy.sh` will create a `bin` folder with all the required files for ru
 Kafka topics are used as input for this use case, ensure that you have Kafka service installed and running. 
 You can either: 
 
-    * install Kafka as standalone, refer to [Kafka Quickstart](https://kafka.apache.org/quickstart)
-    * install Enigma which comes with kafka pre-installed [Vagrant Enigma](https://github.com/Openet-Labs/vagrant-enigma) 
+* install Kafka as standalone, refer to [Kafka Quickstart](https://kafka.apache.org/quickstart)
+* install Enigma which comes with kafka pre-installed [Vagrant Enigma](https://github.com/Openet-Labs/vagrant-enigma) 
 
 Continue to create the required topics:
 
