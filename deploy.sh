@@ -14,4 +14,6 @@ cp $APP_JAR bin/
 cp $APP_PROPS bin/
 cp $APP_SCRIPT bin/
 cp $LOG4J_PROPS bin/
+cp $TRAIN_JAR bin/
+cp $TRAIN_PROPS bin/
 
