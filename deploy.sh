@@ -9,6 +9,10 @@ TRAIN_JAR=auto-scaling/training-data-generator/target/training-data-generator-1.
 TRAIN_PROPS=auto-scaling/training-data-generator/application.properties
 TEST_INPUT=auto-scaling/auto-scaling-usecase/etc/sample_input.json
 TEST_INPUT_SCRIPT=auto-scaling/auto-scaling-usecase/etc/sendTestInput.sh
+NETCAT_SCRIPT=auto-scaling/auto-scaling-usecase/etc/startNetcatRestListerner.sh
+
+
+
 
 
 mkdir -p $DIR_BIN
@@ -20,4 +24,5 @@ cp $TRAIN_JAR bin/
 cp $TRAIN_PROPS bin/
 cp $TEST_INPUT bin/
 cp $TEST_INPUT_SCRIPT bin/
+cp $NETCAT_SCRIPT bin/
 
