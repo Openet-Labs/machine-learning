@@ -73,8 +73,8 @@ public class AutoScalingMain implements Serializable {
     private String kafkaBroker;
 
     //Spark
-    private JavaSparkContext jsc;
-    private JavaStreamingContext javaStreamingContext;
+    private transient JavaSparkContext jsc;
+    private transient JavaStreamingContext javaStreamingContext;
     private SQLContext sqlContext;    
     private Map<String, ItemVdu> vduItemsMap;
 
