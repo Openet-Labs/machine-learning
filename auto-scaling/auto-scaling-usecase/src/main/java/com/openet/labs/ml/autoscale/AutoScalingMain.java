@@ -19,7 +19,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -110,10 +113,25 @@ public class AutoScalingMain implements Serializable {
         instance.close();
 
     }
+    
+    private void enableFileLog() {
+
+        LOGGER.setLevel(Level.DEBUG);
+        RollingFileAppender rfa = new RollingFileAppender();
+        rfa.setFile("/tmp/AutoScaling.log");
+        rfa.setMaxFileSize("50MB");
+        rfa.setLayout(new PatternLayout("%d - [%p] - %m%n"));
+        rfa.setAppend(false);
+        rfa.activateOptions();
+        LOGGER.addAppender(rfa);
+    }
 
     public void init() throws IOException {
 
         LOGGER.info("Start init");
+        
+        enableFileLog();
+        
         setParser(new PropertiesParser());
         setEnigmaKafkaUtils(new EnigmaKafkaUtils());
         setPropertyValues();
