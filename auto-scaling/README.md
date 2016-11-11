@@ -22,6 +22,8 @@ Running`deploy.sh` will create a `bin` folder with all the required files for ru
 * autoscale.properties - the properties file used for configuring the use case
 * log4j.properties - the properties file used for configuring logging options
 * runAutoScaling.sh - the script used to run the use case
+* training-data-generator-1.0-SNAPSHOT-executable.jar - the sample training data generation jar
+* application.properties - the properties file for the training data generation
 
 ## Setup
 
@@ -46,7 +48,7 @@ Use Case specific
 
 
 ### Training data
-To generate training data follow [generate training](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/training-data-generator)
+To generate sample training data follow [Training Data Generator](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/training-data-generator)
     
     
 ## Running
