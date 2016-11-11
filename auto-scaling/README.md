@@ -2,9 +2,9 @@
 This use case showcases rective and predictive scaling of VNFs. We use [Apache Spark](http://spark.apache.org/) as our engine.
 
 It supports scaling based on the following:
-1. CPU Utilization %
-2. Memory Utilization %
-3. Vnfc count
+* CPU Utilization %
+* Memory Utilization %
+* Vnfc count
 
 Using this Repo
 ------------------
