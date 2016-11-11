@@ -113,24 +113,10 @@ public class AutoScalingMain implements Serializable {
         instance.close();
 
     }
-    
-    private void enableFileLog() {
-
-        LOGGER.setLevel(Level.DEBUG);
-        RollingFileAppender rfa = new RollingFileAppender();
-        rfa.setFile("/tmp/AutoScaling.log");
-        rfa.setMaxFileSize("50MB");
-        rfa.setLayout(new PatternLayout("%d - [%p] - %m%n"));
-        rfa.setAppend(false);
-        rfa.activateOptions();
-        LOGGER.addAppender(rfa);
-    }
 
     public void init() throws IOException {
 
-        LOGGER.info("Start init");
-        
-        enableFileLog();
+        LOGGER.info("Start init");        
         
         setParser(new PropertiesParser());
         setEnigmaKafkaUtils(new EnigmaKafkaUtils());
