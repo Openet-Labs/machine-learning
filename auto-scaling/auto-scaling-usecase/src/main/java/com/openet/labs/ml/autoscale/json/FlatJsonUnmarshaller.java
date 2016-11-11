@@ -9,12 +9,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
+
 
 public class FlatJsonUnmarshaller {
 
-    private static final Logger log = LoggerFactory.getLogger(FlatJsonUnmarshaller.class);
+    private static final Logger log = Logger.getLogger(FlatJsonUnmarshaller.class);
 
     private static final String VNF_ID = "vnfid";
     private static final String VDU_ID = "vduid";

@@ -7,13 +7,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CustomUnmarshallerTest {
 
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(CustomUnmarshallerTest.class);
+    private static final Logger log = Logger.getLogger(CustomUnmarshallerTest.class);
     private String json;
 
     public CustomUnmarshallerTest() {
