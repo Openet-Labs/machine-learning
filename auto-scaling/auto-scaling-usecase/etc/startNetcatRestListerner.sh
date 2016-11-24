@@ -22,7 +22,7 @@ do
 	CONTENT_TYPE="Content-Type: application/json"
         # call a script here
         # Note: REQUEST is exported, so the script can parse it (to answer 200/403/404 status code + content)
-        if echo $REQUEST | grep -qE '^/scale/'
+        if echo $REQUEST | grep -qE '\b/scale/\b'
         then
             printf "%s\n%s %s\n%s\n\n%s\n" "$HTTP_200" "$HTTP_LOCATION" $REQUEST "$CONTENT_TYPE" ${REQUEST#"/scale/"} > out
 	    echo $REQUEST
