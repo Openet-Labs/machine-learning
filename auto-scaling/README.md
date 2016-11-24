@@ -74,8 +74,12 @@ Use Case specific
 
 
 ### Training data
-To generate sample training data follow [Training Data Generator](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/training-data-generator)
-    
+
+To generate sample training data: 
+    cd bin
+    java -jar training-data-generator-1.0-SNAPSHOT-executable.jar
+
+for more information [Training Data Generator](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling/training-data-generator)
     
 ## Running
 ###Start the use case
