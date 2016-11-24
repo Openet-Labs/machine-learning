@@ -76,6 +76,7 @@ Use Case specific
 ### Training data
 
 To generate sample training data: 
+
     cd bin
     java -jar training-data-generator-1.0-SNAPSHOT-executable.jar
 
