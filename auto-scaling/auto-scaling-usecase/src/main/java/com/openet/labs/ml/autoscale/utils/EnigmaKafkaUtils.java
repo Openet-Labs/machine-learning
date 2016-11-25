@@ -1,3 +1,20 @@
+/**************************************************************************
+ *
+ * Copyright © Openet Telecom, Ltd. 
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
 package com.openet.labs.ml.autoscale.utils;
 
 import java.io.Serializable;
@@ -37,8 +54,10 @@ public class EnigmaKafkaUtils implements Serializable {
         kafkaParams.put("auto.offset.reset", "smallest");
         kafkaParams.put("metadata.broker.list", broker);
 
-        long fromOffset = getKafkaOffsets(true, host, kafkaTopicName, kafkaCosumerGroup);
-        long untilOffset = getKafkaOffsets(false, host, kafkaTopicName, kafkaCosumerGroup);
+        int kafkaBrokerPort = getBrokerPort(broker);
+
+        long fromOffset = getKafkaOffsets(true, host, kafkaBrokerPort, kafkaTopicName, kafkaCosumerGroup);
+        long untilOffset = getKafkaOffsets(false, host, kafkaBrokerPort, kafkaTopicName, kafkaCosumerGroup);
 
         List<OffsetRange> offsetList = new ArrayList<>();
         for (int i = 0; i < perTopicKafkaPartitions; i++) {
@@ -53,9 +72,9 @@ public class EnigmaKafkaUtils implements Serializable {
 
     }
 
-    public long getKafkaOffsets(boolean isEarliestOffset, String host, String kafkaTopic, String kafkaCosumerGroup) {
+    public long getKafkaOffsets(boolean isEarliestOffset, String host, int port, String kafkaTopic, String kafkaCosumerGroup) {
 
-        SimpleConsumer simpleConsumer = new SimpleConsumer(host, 9092, 100000, 64 * 1024, kafkaTopic);
+        SimpleConsumer simpleConsumer = new SimpleConsumer(host, port, 100000, 64 * 1024, kafkaTopic);
         TopicAndPartition topicAndPartition = new TopicAndPartition(kafkaTopic, 0);
         Map<TopicAndPartition, PartitionOffsetRequestInfo> requestInfo = new HashMap<>();
         if (isEarliestOffset) {
@@ -74,6 +93,13 @@ public class EnigmaKafkaUtils implements Serializable {
         return resultOffset;
     }
 
+    public int getBrokerPort(String kafkaBroker) {
+
+        int kafkaBrokerPort = Integer.parseInt(kafkaBroker.split(":")[1]);
+
+        return kafkaBrokerPort;
+    }
+
     public JavaDStream<String> getKafkaDirectInputStreamOffset(JavaStreamingContext jsc, String host, String kafkaTopic, String kafkaCosumerGroup, String zookeeperQuorum, String broker, boolean isEarliestOffset) {
 
         //kafka streaming parameters
@@ -84,9 +110,11 @@ public class EnigmaKafkaUtils implements Serializable {
         kafkaParams.put("auto.offset.reset", "smallest");
         kafkaParams.put("metadata.broker.list", broker);
 
-        Long startOffset = getKafkaOffsets(false, host, kafkaTopic, kafkaCosumerGroup);
+        int kafkaBrokerPort = getBrokerPort(broker);
+
+        Long startOffset = getKafkaOffsets(false, host, kafkaBrokerPort, kafkaTopic, kafkaCosumerGroup);
         if (isEarliestOffset) {
-            startOffset = getKafkaOffsets(true, host, kafkaTopic, kafkaCosumerGroup);
+            startOffset = getKafkaOffsets(true, host, kafkaBrokerPort, kafkaTopic, kafkaCosumerGroup);
         }
 
         TopicAndPartition topicAndPartition = new TopicAndPartition(kafkaTopic, 0);

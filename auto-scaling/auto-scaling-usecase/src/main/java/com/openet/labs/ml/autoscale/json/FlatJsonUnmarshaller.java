@@ -1,3 +1,20 @@
+/**************************************************************************
+ *
+ * Copyright © Openet Telecom, Ltd. 
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
 package com.openet.labs.ml.autoscale.json;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,7 +27,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.log4j.Logger;
-
 
 public class FlatJsonUnmarshaller {
 
@@ -35,10 +51,10 @@ public class FlatJsonUnmarshaller {
     private static final String DOWN = "down";
 
     /**
-     * 
+     *
      * @param vnfcs
      * @return A list of Vnf
-     * @throws IOException 
+     * @throws IOException
      */
     public static List<Vnf> parseFlatJson(final String vnfcs) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
@@ -110,11 +126,11 @@ public class FlatJsonUnmarshaller {
     }
 
     /**
-     * 
+     *
      * @param list
      * @param vnfId
      * @return Vnf
-     * @throws NoSuchElementException 
+     * @throws NoSuchElementException
      */
     private static Vnf findVnfById(List<Vnf> list, String vnfId) throws NoSuchElementException {
         Optional<Vnf> findFirst = list.stream().filter((vnf) -> (Objects.equals(vnf.getId(), vnfId))).findFirst();
@@ -122,7 +138,7 @@ public class FlatJsonUnmarshaller {
     }
 
     /**
-     * 
+     *
      * @param list
      * @param vduId
      * @return Vdu

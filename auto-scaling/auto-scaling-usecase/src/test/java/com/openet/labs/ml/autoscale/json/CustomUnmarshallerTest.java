@@ -1,3 +1,20 @@
+/**************************************************************************
+ *
+ * Copyright © Openet Telecom, Ltd. 
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
 package com.openet.labs.ml.autoscale.json;
 
 import com.openet.labs.ml.autoscale.scale.Scaler;
@@ -15,10 +32,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- *
- * @author ehsun7b
- */
 public class CustomUnmarshallerTest {
 
     private static final Logger log = Logger.getLogger(CustomUnmarshallerTest.class);
@@ -71,8 +84,8 @@ public class CustomUnmarshallerTest {
             Assert.assertEquals(vnf.size(), 1);
             Assert.assertEquals(vnf.get(0).getId(), "webcach_001");
 
-            Scaler scaler = new ScalerFactory().createScaler(vnf.get(0));           
-                    
+            Scaler scaler = new ScalerFactory().createScaler(vnf.get(0));
+
             for (Vnf vnf1 : vnf) {
                 scaler.scale(vnf1);
             }

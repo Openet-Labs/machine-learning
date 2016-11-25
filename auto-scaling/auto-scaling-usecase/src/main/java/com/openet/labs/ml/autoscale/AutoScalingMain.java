@@ -1,18 +1,19 @@
-/*
-Copyright © Openet Telecom, Ltd. 
- 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
- 
-    http://www.apache.org/licenses/LICENSE-2.0
- 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+/**************************************************************************
+ *
+ * Copyright © Openet Telecom, Ltd. 
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
 
 package com.openet.labs.ml.autoscale;
 
@@ -91,7 +92,7 @@ public class AutoScalingMain implements Serializable {
     //Spark
     private transient JavaSparkContext jsc;
     private transient JavaStreamingContext javaStreamingContext;
-    private SQLContext sqlContext;    
+    private SQLContext sqlContext;
     private Map<String, ItemVdu> vduItemsMap;
 
     //Params
@@ -105,10 +106,10 @@ public class AutoScalingMain implements Serializable {
         instance.setPropertiesPath(arguments.getUseCaseConfFilePath());
         SparkConf sparkConf = new SparkConf().setAppName("com.openet.enigma.autoscaling").setMaster("local[4]");
         instance.setJavaSparkContext(new JavaSparkContext(sparkConf));
-        
+
         // init helper functions and variables
         instance.init();
-        
+
         // train models
         JavaRDD<String> trainDataRDD = instance.getJavaSparkContext().emptyRDD();
         trainDataRDD = instance.getTrainingData();
@@ -129,8 +130,8 @@ public class AutoScalingMain implements Serializable {
 
     public void init() throws IOException {
 
-        LOGGER.info("Start init");        
-        
+        LOGGER.info("Start init");
+
         setParser(new PropertiesParser());
         setEnigmaKafkaUtils(new EnigmaKafkaUtils());
         setPropertyValues();
@@ -140,7 +141,7 @@ public class AutoScalingMain implements Serializable {
             setSqlContext(new SQLContext(getJavaSparkContext()));
             registerUdfs(getSqlContext());
             setJavaStreamingContext(new JavaStreamingContext(jsc, Durations.milliseconds(getStreamDuration())));
-        }        
+        }
         setVduItemsMap(new HashMap<>());
 
         LOGGER.info("Complete init");
