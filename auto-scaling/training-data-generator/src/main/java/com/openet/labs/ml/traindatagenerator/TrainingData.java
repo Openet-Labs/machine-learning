@@ -1,88 +1,104 @@
 package com.openet.labs.ml.traindatagenerator;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
+import org.json.JSONObject;
+
+import com.openet.labs.ml.traindatagenerator.strategies.DefaultGenerator;
+import com.openet.labs.ml.traindatagenerator.strategies.SquareWaveGenerator;
+import com.openet.labs.ml.traindatagenerator.strategies.TrainingDataGenerator;
+
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
-import org.json.JSONObject;
 
 public class TrainingData {
 
-    private static final String MODEL_RES = "model.csv";
-
+    
+	private static Logger logger = Logger.getLogger(TrainingData.class.getName());
+	
     private static String kafkaTrainTopic = "com.openet.autoscaling.test";
     private static String kafkaBroker = "10.3.18.38:9092";
     private static String kafkaGroupId = "enigma";
+    private static String generationStrategy = "default";
+    private static String vdus = "squid,iptables,antivirus";
+    public static void main(String[] args) throws IOException {
 
-    private static Producer<Integer, String> producer;
-
-    public static void main(String[] args) {
-        List<String> metrics = new LinkedList<>();
+    	BasicConfigurator.configure();
 
         try {
+        	//read some values from application.properties
             AppProperties app = new AppProperties();
             kafkaBroker = app.getProperty("kafka.broker");
             kafkaGroupId = app.getProperty("kafka.group.id");
             kafkaTrainTopic = app.getProperty("kafka.topic.train");
+            generationStrategy = app.getProperty("training.strategy");
+            vdus = app.getProperty("training.vdus");
         } catch (IOException ex) {
-            Logger.getLogger(TrainingData.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error(ex);
         }
-                
         
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Thread.currentThread().getContextClassLoader().getResourceAsStream(MODEL_RES)))) {
-            for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                metrics.add(line);
-            }
-        } catch (IOException ex) {
-            Logger.getLogger(TrainingData.class.getName()).log(Level.SEVERE, null, ex);
+        TrainingData trainingData = new TrainingData();
+        //choose the correct generation strategy.
+        //default strategy just varies the 'metric' field
+        //square strategy generates a square wave with a period of 5 minutes
+        switch(generationStrategy.toLowerCase().trim()) {
+        case "square":
+        	trainingData.generate(new SquareWaveGenerator());
+        	break;
+        default:
+        	trainingData.generate(new DefaultGenerator());
         }
 
+    }
+    
+    /**
+     * Generate some data and write it to a kafka topic in JSON format
+     * @param generator
+     */
+    private void generate(TrainingDataGenerator generator) {
+    	
         List<String> vdus = getVdus();
-
-        Timestamp tsBegin = Timestamp.valueOf("2015-10-18 00:00:00");
-        Timestamp tsEnd = Timestamp.valueOf("2015-10-25 00:00:00");
-
-        Iterator<String> itMetric = metrics.iterator();
-        producer = createProducer();
-        for (Timestamp ts = tsBegin; ts.before(tsEnd) && itMetric.hasNext();) {
-            Double metric = 400.0;
-
-            try {
-                String nextMetric = itMetric.next();
-                metric = Double.parseDouble(nextMetric);
-            } catch (NumberFormatException ex) {
-                Logger.getLogger(TrainingData.class.getName()).log(Level.WARNING, "Number format exception!", ex);
-            }
-
+        Producer<Integer, String> producer = createProducer();
+        while (true) {
+        	MetricModel model = generator.getNextMetric();
+        	//no more values available, so we've reached the end of the training metrics
+        	if(null == model) {
+        		break;
+        	}
             for (String vdu : vdus) {
-                JSONObject json = getJsonString(vdu, ts, metric);
-                writeToKafkaTopic(json);
+                JSONObject json = getJsonString(vdu, model.getTimeStamp(), model.getMetric(), model.getCpu(), model.getMemory());
+                writeToKafkaTopic(producer, json);
             }
-
-            ts = new Timestamp(ts.getTime() + (60 * 1000L));
         }
-
     }
 
-    private static List<String> getVdus() {
-        return Arrays.asList(new String[]{"squid", "iptables", "antivirus"});
+    /**
+     * 
+     * @return a list of VDU's we want to emulate
+     */
+    private List<String> getVdus() {
+        return Arrays.asList(vdus.split(","));
     }
 
-    private static JSONObject getJsonString(String vdu, Timestamp ts, Double metric) {
+    /**
+     * 
+     * @param vdu The name of the VDU
+     * @param ts The timestamp the metrics are for
+     * @param metric A VNF specific metric (e.g. TPS)
+     * @param cpu The % CPU being used on the VM hosting the VDU
+     * @param memory The % memory being used on the VM hosting the VDU
+     * @return A JSON object representing the metrics for a point in time  
+     */
+    private JSONObject getJsonString(String vdu, Timestamp ts, Double metric, Double cpu, Double memory) {
         double metricD = metric.doubleValue() * 1.01d;
         double vnfcsCount = (int) Math.ceil(metricD / 100) * 1.00d;
-        double cpu = 50.01d;
-        double memory = 50.01d;
         JSONObject objVdu = new JSONObject();
 
         objVdu.put("Vdu", vdu);
@@ -96,16 +112,24 @@ public class TrainingData {
         return objVdu;
     }
 
-    private static void writeToKafkaTopic(JSONObject json) {
-        System.out.println(json.toString());
+    /**
+     * Write some JSON data to kafka
+     * @param json The JSON object that we're going to push to Kafka
+     */
+    private void writeToKafkaTopic(Producer<Integer, String> producer, JSONObject json) {
+        logger.debug(json.toString());
         try {
             producer.send(new KeyedMessage<>(kafkaTrainTopic, json.toString()));
         } catch (kafka.common.FailedToSendMessageException ex) {
-            Logger.getLogger(TrainingData.class.getName()).log(Level.SEVERE, "Publishing to Kafka topic failed!", ex);
+            logger.error("Publishing to Kafka topic failed!", ex);
         }
     }
 
-    private static Producer<Integer, String> createProducer() {
+    /**
+     * Get a Kafka client we can use to write data to the kafka broker with
+     * @return
+     */
+    private Producer<Integer, String> createProducer() {
         Properties properties = new Properties();
         properties.put("serializer.class", "kafka.serializer.StringEncoder");
         properties.put("metadata.broker.list", kafkaBroker);

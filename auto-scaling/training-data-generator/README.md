@@ -20,6 +20,8 @@ Edit the values in the `application.properties` file based on your [**Apache Kaf
 * **kafka.broker**: The hostname/IP address and the port number of the broker 
 * **kafka.topic.train**: The kafka topic from which the [use case](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling) reads the training data. _You do **not** need to change it unless you have changed the same key in the use case properties file._
 * **kafka.group.id**: The kafka consumer group id of the [use case](https://github.com/Openet-Labs/machine-learning/tree/master/auto-scaling). _You do **not** need to change it unless you have changed the same key in the use case properties file._
+* **training.strategy**: There are 2 strategies available **default** or **square**. The **square** pattern creates a square wave patter where CPU/Memory usage is high for 5 minutes, then low for 5 minutes, then high again for 5 minutes. This is quite useful for testing as it's very predictable. The **default** strategy generates a more slowly changing pattern
+* **training.vdus**: You can leave this as is if you're using the example use case, or change it to match your own VDU's if they differ
 
 ### Run
 ```

@@ -4,14 +4,15 @@ package com.openet.labs.ml.traindatagenerator;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.log4j.Logger;
 
 public class AppProperties {
 
+	private static Logger logger = Logger.getLogger(AppProperties.class);
+	
     protected final String resourceName;
     protected Properties props;
     
@@ -25,15 +26,14 @@ public class AppProperties {
     }
 
     private void loadResource() throws IOException {
-        //System.out.println(currentPath());
         File file = new File(currentPath().concat(File.separator).concat(resourceName));
         props = new Properties();
         
         if (file.exists()) {
-            Logger.getLogger(AppProperties.class.getName()).log(Level.INFO, resourceName.concat(" resource found in the current path."));            
+            logger.info(resourceName.concat(" resource found in the current path."));            
             props.load(new FileReader(file));
         } else {
-            Logger.getLogger(AppProperties.class.getName()).log(Level.INFO, resourceName.concat(" resource Not found in the current path.  Loading the build-in resource"));                        
+            logger.info(resourceName.concat(" resource Not found in the current path.  Loading the build-in resource"));                        
             props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName));
         }
     }
@@ -46,7 +46,7 @@ public class AppProperties {
                 return jar.substring(0, jar.lastIndexOf("/"));
             }
         } catch (URISyntaxException ex) {
-            Logger.getLogger(AppProperties.class.getName()).log(Level.SEVERE, null, ex);            
+            logger.error(ex);            
         }
         
         return ".";
