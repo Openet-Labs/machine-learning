@@ -50,8 +50,8 @@ public class AppProperties {
             logger.info(resourceName.concat(" resource found in the current path."));            
             props.load(new FileReader(file));
         } else {
-            logger.info(resourceName.concat(" resource Not found in the current path.  Loading the build-in resource"));                        
-            props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName));
+            logger.error(resourceName.concat(" resource Not found in the current path."));                        
+            throw new IOException("Could not find " + resourceName);
         }
     }
 
