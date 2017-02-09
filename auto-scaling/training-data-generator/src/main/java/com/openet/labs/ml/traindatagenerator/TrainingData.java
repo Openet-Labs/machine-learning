@@ -21,32 +21,32 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
+import com.openet.labs.ml.traindatagenerator.output.FileWriter;
+import com.openet.labs.ml.traindatagenerator.output.KafkaWriter;
+import com.openet.labs.ml.traindatagenerator.output.Writer;
 import com.openet.labs.ml.traindatagenerator.strategies.DefaultGenerator;
 import com.openet.labs.ml.traindatagenerator.strategies.SquareWaveGenerator;
 import com.openet.labs.ml.traindatagenerator.strategies.TrainingDataGenerator;
 
-import kafka.javaapi.producer.Producer;
-import kafka.producer.KeyedMessage;
-import kafka.producer.ProducerConfig;
-
 public class TrainingData {
 
     
-	private static Logger logger = Logger.getLogger(TrainingData.class.getName());
+	private static Logger logger = Logger.getLogger(TrainingData.class);
 	
     private static String kafkaTrainTopic = "com.openet.autoscaling.test";
     private static String kafkaBroker = "10.3.18.38:9092";
     private static String kafkaGroupId = "enigma";
     private static String generationStrategy = "default";
     private static String vdus = "squid,iptables,antivirus";
+    private static String output="file";
     public static void main(String[] args) throws IOException {
 
+    	//setup basic log4j logging
     	BasicConfigurator.configure();
 
         try {
@@ -57,32 +57,44 @@ public class TrainingData {
             kafkaTrainTopic = app.getProperty("kafka.topic.train");
             generationStrategy = app.getProperty("training.strategy");
             vdus = app.getProperty("training.vdus");
+            output = app.getProperty("training.output");
         } catch (IOException ex) {
             logger.error(ex);
         }
         
-        TrainingData trainingData = new TrainingData();
+        //decide whether to write to kafka or file (file is useful for generating unit test data)
+        Writer writer = null;
+        switch(output.toLowerCase().trim()) {
+        case "kafka":
+        	writer = new KafkaWriter(kafkaTrainTopic, kafkaBroker, kafkaGroupId);
+        	break;
+    	default:
+    		writer = new FileWriter();
+        }
+        
         //choose the correct generation strategy.
         //default strategy just varies the 'metric' field
         //square strategy generates a square wave with a period of 5 minutes
+        TrainingDataGenerator generator = null;
         switch(generationStrategy.toLowerCase().trim()) {
         case "square":
-        	trainingData.generate(new SquareWaveGenerator());
+        	generator = new SquareWaveGenerator();
         	break;
         default:
-        	trainingData.generate(new DefaultGenerator());
+        	generator = new DefaultGenerator();
         }
 
+        TrainingData trainingData = new TrainingData();
+        trainingData.generate(generator, writer);
     }
     
     /**
      * Generate some data and write it to a kafka topic in JSON format
      * @param generator
      */
-    private void generate(TrainingDataGenerator generator) {
+    private void generate(TrainingDataGenerator generator, Writer writer) {
     	
         List<String> vdus = getVdus();
-        Producer<Integer, String> producer = createProducer();
         while (true) {
         	MetricModel model = generator.getNextMetric();
         	//no more values available, so we've reached the end of the training metrics
@@ -91,7 +103,7 @@ public class TrainingData {
         	}
             for (String vdu : vdus) {
                 JSONObject json = getJsonString(vdu, model.getTimeStamp(), model.getMetric(), model.getCpu(), model.getMemory());
-                writeToKafkaTopic(producer, json);
+                writer.write(json);
             }
         }
     }
@@ -127,32 +139,5 @@ public class TrainingData {
         objVdu.put("Timestamp", tsStr);
 
         return objVdu;
-    }
-
-    /**
-     * Write some JSON data to kafka
-     * @param json The JSON object that we're going to push to Kafka
-     */
-    private void writeToKafkaTopic(Producer<Integer, String> producer, JSONObject json) {
-        logger.debug(json.toString());
-        try {
-            producer.send(new KeyedMessage<>(kafkaTrainTopic, json.toString()));
-        } catch (kafka.common.FailedToSendMessageException ex) {
-            logger.error("Publishing to Kafka topic failed!", ex);
-        }
-    }
-
-    /**
-     * Get a Kafka client we can use to write data to the kafka broker with
-     * @return
-     */
-    private Producer<Integer, String> createProducer() {
-        Properties properties = new Properties();
-        properties.put("serializer.class", "kafka.serializer.StringEncoder");
-        properties.put("metadata.broker.list", kafkaBroker);
-        properties.put("group.id", kafkaGroupId);
-
-        Producer<Integer, String> result = new Producer<>(new ProducerConfig(properties));
-        return result;
     }
 }
