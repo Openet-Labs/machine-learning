@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>    
+    <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.openet.labs.ml</groupId>
         <artifactId>auto-scaling</artifactId>
         <version>1.0-SNAPSHOT</version>
-    </parent>    
+    </parent>
     <artifactId>auto-scaling-usecase</artifactId>
     <packaging>jar</packaging>
     <properties>
@@ -19,11 +19,10 @@
         <easymock.version>3.3.1</easymock.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>    
+    </properties>
     <dependencies>
         <dependency>
-            <!-- while we don't use cglib directly, including it resolves 
-            a runtime dependency problem during unit testing -->
+            <!-- while we don't use cglib directly, including it resolves a runtime dependency problem during unit testing -->
             <groupId>cglib</groupId>
             <artifactId>cglib</artifactId>
             <version>3.1</version>
@@ -120,13 +119,7 @@
             <version>${powermock.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- we dont need this
-        <dependency>
-            <artifactId>guava</artifactId>
-            <groupId>com.google.guava</groupId>
-            <type>jar</type>
-            <version>15.0</version>
-        </dependency>-->
+        <!-- we dont need this <dependency> <artifactId>guava</artifactId> <groupId>com.google.guava</groupId> <type>jar</type> <version>15.0</version> </dependency> -->
     </dependencies>
     <build>
         <pluginManagement>
@@ -144,25 +137,28 @@
         </pluginManagement>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.18.1</version>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>com.openet.labs.ml.autoscale.DockerTest</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
             </plugin>
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>2.3</version>
                 <configuration>
                     <transformers>
-                        <transformer
-                            implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
                             <resource>META-INF/README</resource>
                             <file>README.txt</file>
                         </transformer>
-                        <!-- transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"> 
-                        <manifestEntries> <Main-Class>com.openet.enigma.mobinil.main.MonitoringKeyLauncher</Main-Class> 
-                        <X-Compile-Source-JDK>1.8</X-Compile-Source-JDK> <X-Compile-Target-JDK>1.8</X-Compile-Target-JDK> 
-                        </manifestEntries> </transformer -->
                     </transformers>
                     <filters>
                         <filter>
@@ -184,6 +180,30 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <version>1.2.2</version>
+                <executions>
+                    <execution>
+                        <id>default</id>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <repository>com.openet.labs.enigma/auto-scaling-usecase</repository>
+                    <tag>${project.version}</tag>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.18.1</version>
+            </plugin>
+            
 
         </plugins>
     </build>
