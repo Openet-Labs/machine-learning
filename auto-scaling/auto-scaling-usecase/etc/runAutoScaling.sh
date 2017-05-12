@@ -55,7 +55,7 @@ function sparkSubmit()
  "$@"
 }
 
-SPARK_HOME=/home/vagrant/enigma/spark/spark-1.6.1-bin-hadoop2.6
+SPARK_HOME="${SPARK_HOME:-/home/vagrant/enigma/spark/spark-1.6.1-bin-hadoop2.6}"
 
 LOG4J_PROPERTIES_PATH=log4j.properties
 
@@ -63,4 +63,4 @@ CLASSPATH=com.openet.labs.ml.autoscale.AutoScalingMain
 JAR=auto-scaling-usecase-1.0-SNAPSHOT.jar
 USECASE_PROPERTIES=autoscale.properties
 
-sparkSubmit ${CLASSPATH} ${JAR} --usecase-properties ${USECASE_PROPERTIES} &
+sparkSubmit ${CLASSPATH} ${JAR} --usecase-properties ${USECASE_PROPERTIES}
